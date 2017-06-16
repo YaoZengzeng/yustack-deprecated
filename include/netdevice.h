@@ -6,6 +6,8 @@
 
 #define MAX_ADDR_LEN	32		// Largest hardware address length
 
+struct sk_buff;
+
 struct net_device {
 	char name[IFNAMSIZ];
 
