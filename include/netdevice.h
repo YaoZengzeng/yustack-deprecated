@@ -6,6 +6,9 @@
 
 #define MAX_ADDR_LEN	32		// Largest hardware address length
 
+#define NET_RX_SUCCESS	0
+#define	NET_RX_DROP		1
+
 struct sk_buff;
 
 struct net_device {
@@ -45,8 +48,20 @@ struct net_device {
 	int 	(*stop)(struct net_device *dev);
 };
 
+struct packet_type {
+	uint16_t type;
+	struct net_device *dev;
+	int (*func) (struct sk_buff *, struct net_device*, struct packet_type *);
+	struct packet_type *next;
+};
+
 struct net_device *alloc_netdev(int sizeof_priv, const char *name,
 							void (*setup)(struct net_device *));
 int register_netdevice(struct net_device *dev);
+
+int netif_rx(struct sk_buff *skb);
+int netif_receive_skb(struct sk_buff *skb);
+
+void dev_add_pack(struct packet_type *pt);
 
 #endif /* _YUSTACK_NETDEVICE_H */

@@ -33,6 +33,7 @@ struct sk_buff {
 	unsigned int mac_len;
 
 	uint16_t	protocol;
+	uint16_t	pkt_type;
 
 	void 	(*destructor)(struct sk_buff *skb);
 

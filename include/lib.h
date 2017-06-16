@@ -12,4 +12,7 @@
 
 #define DEBUG 1
 
+#define htons(x) ((x >> 8 & 0x00ff) | (x << 8))
+#define ntohs(x) (htons(s))
+
 #endif /* _YUSTACK_LIB_H */

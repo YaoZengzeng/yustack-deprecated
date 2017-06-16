@@ -29,7 +29,7 @@ struct sk_buff *alloc_skb(unsigned int length) {
 }
 
 struct sk_buff *dev_alloc_skb(unsigned int length) {
-	return alloc_skb(length + NET_SKB_PAD);
+	return alloc_skb(length);
 }
 
 void kfree_skb(struct sk_buff *skb) {
@@ -66,14 +66,16 @@ unsigned char *skb_pull(struct sk_buff *skb, unsigned int len) {
 }
 
 unsigned char *skb_put(struct sk_buff *skb, unsigned int len) {
+	unsigned char *tmp;
 	if (skb->tail + len > skb->end) {
 		printf("skb_put failed\n");
 		return NULL;
 	}
-
+	tmp = skb->tail;
+	skb->tail += len;
 	skb->len += len;
 
-	return skb->tail += len;
+	return tmp;
 }
 
 void skb_queue_head_init(struct sk_buff_head *list) {
