@@ -86,3 +86,14 @@ void dev_add_pack(struct packet_type *pt) {
 	pt->next = ptype_base;
 	ptype_base = pt;
 }
+
+// dev_queue_xmit - transmit a buffer
+int dev_queue_xmit(struct sk_buff *skb) {
+	struct net_device *dev = skb->dev;
+
+	return dev_hard_start_xmit(skb, dev);
+}
+
+int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev) {
+	return dev->hard_start_xmit(skb, dev);
+}

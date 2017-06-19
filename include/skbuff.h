@@ -7,6 +7,7 @@ struct net_device;
 
 #define NET_SKB_PAD 16
 
+struct arphdr;
 struct sk_buff {
 	// These two members must be first
 	struct sk_buff	*next;
@@ -20,6 +21,7 @@ struct sk_buff {
 	} h;
 
 	union {
+		struct arphdr *arph;
 		unsigned char *raw;
 	} nh;
 
@@ -59,6 +61,8 @@ void skb_reserve(struct sk_buff *skb, int len);
 unsigned char *skb_push(struct sk_buff *skb, unsigned int len);
 unsigned char *skb_pull(struct sk_buff *skb, unsigned int len);
 unsigned char *skb_put(struct sk_buff *skb, unsigned int len);
+
+int skb_may_pull(struct sk_buff *skb, unsigned int len);
 
 void skb_queue_head_init(struct sk_buff_head *list);
 void skb_queue_head(struct sk_buff_head *list, struct sk_buff *newsk);

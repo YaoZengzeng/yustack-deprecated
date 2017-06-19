@@ -61,8 +61,13 @@ unsigned char *skb_pull(struct sk_buff *skb, unsigned int len) {
 		printf("skb_pull failed\n");
 		return NULL;
 	}
-
+	skb->len -= len;
 	return skb->data += len;
+}
+
+int skb_may_pull(struct sk_buff *skb, unsigned int len) {
+	printf("skb->len is %d, len is %d\n", skb->len, len);
+	return skb->len >= len;
 }
 
 unsigned char *skb_put(struct sk_buff *skb, unsigned int len) {

@@ -7,11 +7,45 @@
 
 extern int tapfd;
 
+// Create the Ethernet header
+int eth_header(struct sk_buff *skb, struct net_device *dev, unsigned short type,
+		void *daddr, void *saddr, unsigned len) {
+	struct ethhdr *eth = (struct ethhdr *)skb_push(skb, ETH_HLEN);
+
+	eth->h_proto = htons(type);
+
+	if (!saddr) {
+		saddr = dev->dev_addr;
+	}
+	memcpy(eth->h_source, saddr, dev->addr_len);
+
+	if (daddr) {
+		memcpy(eth->h_dest, daddr, dev->addr_len);
+		return ETH_HLEN;
+	}
+
+	return -1;
+}
+
+int ether_tx(struct sk_buff *skb, struct net_device *dev) {
+	int len;
+
+	len = write(tapfd, skb->data, skb->len);
+	if (len != skb->len) {
+		printf("ether_tx failed\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 void ether_setup(struct net_device *dev) {
 	dev->type = ARPHRD_ETHER;
 	dev->hard_header_len = ETH_HLEN;
 	dev->mtu = ETH_DATA_LEN;
 	dev->addr_len = ETH_ALEN;
+	dev->hard_header = eth_header;
+	dev->hard_start_xmit = ether_tx;
 
 	memset(dev->broadcast, 0xFF, ETH_ALEN);
 }
@@ -95,6 +129,7 @@ void ether_rx(struct net_device *dev) {
 	memcpy(skb_put(skb, len), buff, len);
 
 	skb->dev = dev;
+	skb->len = len;
 	skb->protocol = eth_type_trans(skb, dev);
 
 	if (DEBUG) {

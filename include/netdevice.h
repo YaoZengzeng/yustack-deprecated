@@ -35,7 +35,7 @@ struct net_device {
 	unsigned char	dev_addr[MAX_ADDR_LEN];
 	unsigned char 	broadcast[MAX_ADDR_LEN];
 
-	//int 	(*hard_start_xmit) (struct sk_buff *skb, struct net_device *dev);
+	int 	(*hard_start_xmit) (struct sk_buff *skb, struct net_device *dev);
 
 	// The device initialization function. Called only once
 	int 	(*init)(struct net_device *dev);
@@ -46,6 +46,10 @@ struct net_device {
 
 	int 	(*open)(struct net_device *dev);
 	int 	(*stop)(struct net_device *dev);
+
+	// for ehternet is eth_header()
+	int 	(*hard_header)(struct sk_buff *skb, struct net_device *dev,
+						unsigned short type, void *daddr, void *saddr, unsigned len);
 };
 
 struct packet_type {
@@ -63,5 +67,8 @@ int netif_rx(struct sk_buff *skb);
 int netif_receive_skb(struct sk_buff *skb);
 
 void dev_add_pack(struct packet_type *pt);
+
+int dev_queue_xmit(struct sk_buff *skb);
+int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev);
 
 #endif /* _YUSTACK_NETDEVICE_H */
