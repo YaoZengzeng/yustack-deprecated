@@ -1,13 +1,18 @@
 #ifndef _YUSTACK_SKBUFF_H
 #define _YUSTACK_SKBUFF_H
 
+#include "dst.h"
 #include "types.h"
 
 struct net_device;
 
 #define NET_SKB_PAD 16
 
+struct icmphdr;
+
+struct iphdr;
 struct arphdr;
+
 struct sk_buff {
 	// These two members must be first
 	struct sk_buff	*next;
@@ -17,10 +22,12 @@ struct sk_buff {
 	struct net_device *dev;
 
 	union {
+		struct icmphdr *icmph;
 		unsigned char *raw;
 	} h;
 
 	union {
+		struct iphdr  *iph;
 		struct arphdr *arph;
 		unsigned char *raw;
 	} nh;
@@ -29,7 +36,7 @@ struct sk_buff {
 		unsigned char *raw;
 	} mac;
 
-	//struct dst_entry	*dst;
+	struct dst_entry	*dst;
 
 	unsigned int len;
 	unsigned int mac_len;
