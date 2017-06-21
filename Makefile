@@ -14,7 +14,10 @@ OBJFILES = $(OBJ)/main.o \
 		   $(OBJ)/arp.o \
 		   $(OBJ)/route.o \
 		   $(OBJ)/protocol.o \
-		   $(OBJ)/icmp.o
+		   $(OBJ)/icmp.o \
+		   $(OBJ)/socket.o \
+		   $(OBJ)/sock.o \
+		   $(OBJ)/ip_output.o
 
 SUBDIRS = $(shell ls -l | grep ^d | awk '{if($$9 != "obj" && $$9 != "include") print $$9}')
 

@@ -26,6 +26,7 @@ struct packet_type;
 int inet_init(void);
 int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt);
 int ip_local_deliver(struct sk_buff *skb);
+int ip_output(struct sk_buff *skb);
 
 // Some random defines to make things easier
 #define LOOPBACK(x) (((x) & htonl(0xff000000)) == htonl(0x7f000000))

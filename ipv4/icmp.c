@@ -1,7 +1,13 @@
+#include "in.h"
+#include "ip.h"
 #include "lib.h"
+#include "net.h"
+#include "ipv4.h"
 #include "types.h"
 #include "icmp.h"
+#include "socket.h"
 #include "skbuff.h"
+#include "if_ether.h"
 
 // ICMP control array. This specifies what to do with each ICMP
 struct icmp_control {
@@ -29,9 +35,62 @@ struct icmp_bxm {
 	unsigned char optbuf[40];
 };
 
+struct socket *icmp_sock;
+
+uint16_t checksum(uint16_t* buff, int size) {
+	uint32_t cksum = 0;
+
+	while(size > 1) {
+		cksum += *buff++;
+		size -= 2;
+	}
+	if (size == 1) {
+		cksum += htons(*(char *)buff << 8);
+	}
+	cksum = (cksum >> 16) + (cksum & 0xffff);
+	cksum += (cksum >> 16);
+
+	return (uint16_t)(~cksum);
+}
+
+void icmp_push_reply(struct icmp_bxm *icmp_param,
+			struct ipcm_cookie *ipc, struct rtable *rt) {
+	struct sk_buff *skb = icmp_param->skb;
+	struct iphdr *iph;
+	struct ethhdr *ether;
+	struct icmphdr *icmph;
+	uint32_t t;
+	char c;
+	int i;
+	
+	iph = skb->nh.iph;
+	// Exchange source and dest IP address
+	t = iph->saddr;
+	iph->saddr = iph->daddr;
+	iph->daddr = t;
+
+	ether = (struct ethhdr *)(skb->mac.raw);
+
+	for (i = 0; i < ETH_ALEN; i++) {
+		c = ether->h_source[i];
+		ether->h_source[i] = ether->h_dest[i];
+		ether->h_dest[i] = c;
+	}
+
+	icmph = skb->h.icmph;
+	icmph->type = ICMP_ECHOREPLY;
+	skb_push(skb, sizeof(struct icmphdr));
+	icmph->checksum = 0;
+	icmph->checksum = checksum((uint16_t *)skb->data, skb->len);
+
+	skb_push(skb, sizeof(struct iphdr) + sizeof(struct ethhdr));
+
+	dst_output(skb);
+}
+
 // Driving logic for building and sending ICMP messages
 void icmp_reply(struct icmp_bxm *icmp_param, struct sk_buff *skb) {
-
+	icmp_push_reply(icmp_param, NULL, NULL);
 }
 
 // Handle ICMP_ECHO ("ping") requests
@@ -84,4 +143,14 @@ int icmp_rcv(struct sk_buff *skb) {
 drop:
 	kfree_skb(skb);
 	return 0;
+}
+
+void icmp_init() {
+	int err;
+
+	err = sock_create(PF_INET, SOCK_RAW, IPPROTO_ICMP, &icmp_sock);
+
+	if (err < 0) {
+		printf("Failed to create the ICMP control socket\n");
+	}
 }

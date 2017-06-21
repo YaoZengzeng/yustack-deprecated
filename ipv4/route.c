@@ -21,7 +21,9 @@ int ip_route_input_slow(struct sk_buff *skb, uint32_t daddr, uint32_t saddr,
 		printf("ip_route_input_slow: malloc failed\n");
 		return -1;
 	}
+	skb->dst->dev = dev;
 	skb->dst->input = ip_local_deliver;
+	skb->dst->output = ip_output;
 
 	return 0;
 }

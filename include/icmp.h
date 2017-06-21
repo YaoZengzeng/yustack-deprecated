@@ -25,6 +25,7 @@ struct icmphdr {
 	} un;
 };
 
+void icmp_init(void);
 int icmp_rcv(struct sk_buff *skb);
 
 #endif /* _YUSTACK_ICMP_H */

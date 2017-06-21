@@ -47,6 +47,7 @@ void ether_setup(struct net_device *dev) {
 	dev->hard_header = eth_header;
 	dev->hard_start_xmit = ether_tx;
 
+	memcpy(dev->dev_addr, "\0YUSTK", ETH_ALEN);
 	memset(dev->broadcast, 0xFF, ETH_ALEN);
 }
 

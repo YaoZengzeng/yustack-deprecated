@@ -66,7 +66,6 @@ unsigned char *skb_pull(struct sk_buff *skb, unsigned int len) {
 }
 
 int skb_may_pull(struct sk_buff *skb, unsigned int len) {
-	printf("skb->len is %d, len is %d\n", skb->len, len);
 	return skb->len >= len;
 }
 
