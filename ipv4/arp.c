@@ -1,10 +1,43 @@
 #include "lib.h"
+#include "dst.h"
 #include "ipv4.h"
+#include "route.h"
 #include "skbuff.h"
+#include "socket.h"
 #include "if_arp.h"
 #include "if_ether.h"
 #include "if_packet.h"
+#include "neighbour.h"
 #include "netdevice.h"
+
+struct neigh_ops arp_generic_ops = {
+	.family = AF_INET,
+	//.solicit = arp_solicit,
+	//.error_report = arp_error_report,
+	.output = neigh_resolve_output,
+	//.connected_output = neigh_connected_output,
+	//.hh_output = dev_queue_xmit,
+	.queue_xmit = dev_queue_xmit,
+};
+
+int arp_constructor(struct neighbour *neigh) {
+
+	neigh->ops = &arp_generic_ops;
+
+	neigh->output = neigh->ops->output;
+
+	return 0;
+}
+
+struct neigh_table arp_tbl = {
+	.family = AF_INET,
+
+	.key_len = 4,
+
+	.constructor = arp_constructor,
+
+	.id = "arp_cache",
+};
 
 // Create an arp packet. If (dest_hw == NULL)
 // we create a broadcast message
@@ -101,6 +134,7 @@ static int arp_process(struct sk_buff *skb) {
 	unsigned char *sha, *tha;
 	uint32_t sip, tip;
 	uint16_t dev_type = dev->type;
+	struct neighbour *n;
 
 	arp = skb->nh.arph;
 
@@ -139,7 +173,12 @@ static int arp_process(struct sk_buff *skb) {
 	if (arp->ar_op == htons(ARPOP_REQUEST)) {
 		// before the code or route finished,
 		// directly call arp_send by using dev->dev_addr
-		arp_send(ARPOP_REPLY, ETH_P_ARP, sip, dev, tip, sha, dev->dev_addr, sha);
+		n = neigh_event_ns(&arp_tbl, sha, &sip, dev);
+		if (n) {
+			arp_send(ARPOP_REPLY, ETH_P_ARP, sip, dev, tip, sha, dev->dev_addr, sha);
+		} else {
+			printf("arp_process: neigh_event_ns failed\n");
+		}
 		goto out;
 	}
 
@@ -179,6 +218,29 @@ struct packet_type arp_packet_type = {
 	.func = arp_rcv,
 };
 
+int arp_bind_neighbour(struct dst_entry *dst) {
+	struct net_device *dev = dst->dev;
+	struct neighbour *n = dst->neighbour;
+
+	if (dev == NULL) {
+		printf("arp_bind_neighbour: dst->dev is NULL\n");
+		return -1;
+	}
+
+	if (n == NULL) {
+		uint32_t nexthop = ((struct rtable *)dst)->rt_gateway;
+		n = __neigh_lookup_errno(&arp_tbl, &nexthop, dev);
+		if (n == NULL) {
+			return -1;
+		}
+		dst->neighbour = n;
+	}
+
+	return 0;
+}
+
 void arp_init(void) {
+	neigh_table_init(&arp_tbl);
+
 	dev_add_pack(&arp_packet_type);
 }

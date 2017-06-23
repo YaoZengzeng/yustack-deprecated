@@ -1,4 +1,5 @@
 #include "lib.h"
+#include "dst.h"
 #include "skbuff.h"
 #include "if_ether.h"
 #include "netdevice.h"
@@ -8,10 +9,17 @@ int dst_output(struct sk_buff *skb) {
 }
 
 int ip_finish_output2(struct sk_buff *skb) {
+	struct dst_entry *dst = skb->dst;
 	struct net_device *dev = skb->dst->dev;
 
-	// just walk around
-	return dev->hard_start_xmit(skb, dev);
+	if (dst->neighbour) {
+		dst->neighbour->output(skb);
+	} else {
+		printf("ip_finish_output2: dst->neighbour is NULL\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 int ip_finish_output(struct sk_buff *skb) {

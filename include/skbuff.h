@@ -1,7 +1,6 @@
 #ifndef _YUSTACK_SKBUFF_H
 #define _YUSTACK_SKBUFF_H
 
-#include "dst.h"
 #include "types.h"
 
 struct net_device;
@@ -12,6 +11,8 @@ struct icmphdr;
 
 struct iphdr;
 struct arphdr;
+
+struct dst_entry;
 
 struct sk_buff {
 	// These two members must be first

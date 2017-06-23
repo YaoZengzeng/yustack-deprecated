@@ -57,11 +57,10 @@ void icmp_push_reply(struct icmp_bxm *icmp_param,
 			struct ipcm_cookie *ipc, struct rtable *rt) {
 	struct sk_buff *skb = icmp_param->skb;
 	struct iphdr *iph;
-	struct ethhdr *ether;
 	struct icmphdr *icmph;
 	uint32_t t;
 	char c;
-	int i;
+	int i, ret;
 	
 	iph = skb->nh.iph;
 	// Exchange source and dest IP address
@@ -69,21 +68,20 @@ void icmp_push_reply(struct icmp_bxm *icmp_param,
 	iph->saddr = iph->daddr;
 	iph->daddr = t;
 
-	ether = (struct ethhdr *)(skb->mac.raw);
-
-	for (i = 0; i < ETH_ALEN; i++) {
-		c = ether->h_source[i];
-		ether->h_source[i] = ether->h_dest[i];
-		ether->h_dest[i] = c;
-	}
-
 	icmph = skb->h.icmph;
 	icmph->type = ICMP_ECHOREPLY;
 	skb_push(skb, sizeof(struct icmphdr));
 	icmph->checksum = 0;
 	icmph->checksum = checksum((uint16_t *)skb->data, skb->len);
 
-	skb_push(skb, sizeof(struct iphdr) + sizeof(struct ethhdr));
+	skb_push(skb, sizeof(struct iphdr));
+
+	// Just walk around
+	ret = ip_route_output_slow(skb, iph->daddr);
+	if (ret != 0) {
+		printf("icmp_push_reply: ip_route_output_slow failed\n");
+		return;
+	}
 
 	dst_output(skb);
 }
