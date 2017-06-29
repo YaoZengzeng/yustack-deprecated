@@ -1,7 +1,11 @@
 #include "lib.h"
 #include "dst.h"
+#include "ipv4.h"
+#include "sock.h"
 #include "skbuff.h"
+#include "route.h"
 #include "if_ether.h"
+#include "inet_sock.h"
 #include "netdevice.h"
 
 int dst_output(struct sk_buff *skb) {
@@ -33,4 +37,68 @@ int ip_output(struct sk_buff *skb) {
 	skb->protocol = htons(ETH_P_IP);
 
 	return ip_finish_output(skb);
+}
+
+// ip_append_data() can make one large IP datagram from many pieces of data
+// Each pieces will be holded on the socket until ip_push_pending_frames() is
+// called. Each piece can be a page or non-page data.
+//
+// Not only UDP, other transport protocols - e.g. raw sockets - can use this
+// interface opentially.
+int ip_append_data(struct sock *sk,
+			int getfrag(void *from, char *to, int offset, int len,
+					int odd, struct sk_buff *skb),
+			void *from, int length, int transhdrlen,
+			struct ipcm_cookie *ipc, struct rtable *rt,
+			unsigned int flags) {
+	int hh_len;
+	int copy, offset = 0;
+	struct sk_buff *skb;
+	struct ip_options *opt = NULL;
+	unsigned int maxfraglen, fragheaderlen;
+	unsigned int datalen, alloclen, fraglen, fraggap;
+
+	hh_len = LL_RESERVED_SPACE(rt->u.dst.dev);
+
+	fragheaderlen = sizeof(struct iphdr) + (opt ? opt->optlen : 0);
+
+	fraggap = 0;
+	datalen = length + fraggap;
+	alloclen = length + fragheaderlen;
+	fraglen = length + fragheaderlen;
+
+	skb = alloc_skb(alloclen + hh_len);
+	if (skb == NULL) {
+		printf("ip_append_data: alloc_skb failed\n");
+		return -1;
+	}
+
+	skb_reserve(skb, hh_len);
+
+	// Find where to start putting bytes
+	char *data;
+	data = skb_put(skb, fraglen);
+	skb->nh.raw = data;
+	data += fragheaderlen;
+	skb->h.raw = data;
+
+	copy = datalen - transhdrlen - fraggap;
+	if (copy > 0 && getfrag(from, data + transhdrlen, offset, copy, fraggap, skb) < 0) {
+		printf("ip_append_data: getfrag failed\n");
+
+	}
+
+	// Put the packet on the pending queue.
+	skb_queue_tail(&sk->sk_write_queue, skb);
+	return 0;
+
+error:
+	kfree_skb(skb);
+	return -1;
+}
+
+// Combine all pending IP fragments on the socket as one IP datagram
+// and push them out
+int ip_push_pending_frames(struct sock *sk) {
+
 }

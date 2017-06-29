@@ -76,4 +76,6 @@ void skb_queue_head_init(struct sk_buff_head *list);
 void skb_queue_head(struct sk_buff_head *list, struct sk_buff *newsk);
 void skb_queue_tail(struct sk_buff_head *list, struct sk_buff *newsk);
 
+struct sk_buff *skb_peek(struct sk_buff_head *list);
+
 #endif /* _YUSTACK_SKBUFF_H */

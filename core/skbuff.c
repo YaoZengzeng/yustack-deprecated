@@ -106,3 +106,7 @@ void skb_queue_tail(struct sk_buff_head *list, struct sk_buff *newsk) {
 	newsk->prev = prev;
 	newsk->next = (struct sk_buff *)list;
 }
+
+struct sk_buff *skb_peek(struct sk_buff_head *list) {
+	return list->next;
+}

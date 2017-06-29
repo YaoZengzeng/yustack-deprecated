@@ -5,6 +5,7 @@
 #include "protocol.h"
 #include "if_packet.h"
 #include "netdevice.h"
+#include "checksum.h"
 
 extern struct net_protocol *inet_protos;
 
@@ -104,11 +105,11 @@ int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt) 
 		goto drop;
 	}
 
-/*
-	if (ip_fast_csum((uint8_t *)iph, iph->ihl)) {
+
+	if (checksum((uint16_t *)iph, iph->ihl * 4)) {
 		printf("ip_rcv: checksum failed\n");
 		goto drop;
-	}*/
+	}
 
 	len = ntohs(iph->tot_len);
 	if (skb->len < len || len < (iph->ihl * 4)) {
