@@ -2,7 +2,6 @@
 #define _YUSTACK_IPV4_H
 
 #include "lib.h"
-#include "types.h"
 
 struct iphdr {
 	uint8_t	ihl:4,

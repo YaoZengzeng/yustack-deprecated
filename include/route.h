@@ -12,6 +12,9 @@ struct rtable {
 		struct rtable *rt_next;
 	} u;
 
+	uint32_t rt_dst;	// Path destination
+	uint32_t rt_src;	// Path source
+
 	uint32_t rt_gateway;
 };
 

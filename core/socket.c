@@ -37,6 +37,8 @@ int sock_create(int family, int type, int protocol, struct socket **res) {
 		return -1;
 	}
 
+	*res = sock;
+
 	return 0;
 }
 

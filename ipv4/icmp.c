@@ -45,13 +45,12 @@ int icmp_glue_bits(void *from, char *to, int offset, int len, int odd,
 	struct icmp_bxm *icmp_param = (struct icmp_bxm *)from;
 
 	memcpy(to, icmp_param->skb->data, len);
-	skb->len = len;
 
 	icmph = skb->h.icmph;
 	memcpy(icmph, &(icmp_param->data.icmph), icmp_param->head_len);
-	skb->len += icmp_param->head_len;
 	icmph->checksum = 0;
-	icmph->checksum = checksum((uint16_t *)skb, skb->len);
+	icmph->checksum = checksum((uint16_t *)icmph, skb->len);
+	skb_push(skb, icmp_param->head_len);
 
 	return 0;
 }
@@ -75,6 +74,14 @@ void icmp_push_reply(struct icmp_bxm *icmp_param,
 void icmp_reply(struct icmp_bxm *icmp_param, struct sk_buff *skb) {
 	struct ipcm_cookie ipc;
 	struct rtable *rt = (struct rtable *)skb->dst;
+
+	// No route system, walk around
+	struct iphdr *iph = skb->nh.iph;
+
+	rt->rt_dst = iph->saddr;
+	rt->rt_src = iph->daddr;
+
+	rt->rt_gateway = iph->saddr;
 
 	ipc.opt = NULL;
 

@@ -231,6 +231,7 @@ int arp_bind_neighbour(struct dst_entry *dst) {
 		uint32_t nexthop = ((struct rtable *)dst)->rt_gateway;
 		n = __neigh_lookup_errno(&arp_tbl, &nexthop, dev);
 		if (n == NULL) {
+			printf("arp_bind_neighbour: __neigh_lookup_errno failed\n");
 			return -1;
 		}
 		dst->neighbour = n;

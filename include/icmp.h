@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "skbuff.h"
+#include "inet_sock.h"
 
 #define ICMP_ECHOREPLY	0	// Echo Reply
 #define ICMP_ECHO 		8	// Echo Request
@@ -23,6 +24,10 @@ struct icmphdr {
 			uint16_t mtu;
 		} frag;
 	} un;
+};
+
+struct raw_sock {
+	struct inet_sock inet;
 };
 
 void icmp_init(void);

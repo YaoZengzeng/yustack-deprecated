@@ -43,6 +43,7 @@ struct neighbour *neigh_create(struct neigh_table *tbl, void *pkey,
 		goto out;
 	}
 
+	printf("neigh_create: pkey is %x\n", *(uint32_t *)pkey);
 	memcpy(n->primary_key, pkey, key_len);
 	n->dev = dev;
 
@@ -92,6 +93,8 @@ struct neighbour * __neigh_lookup_errno(struct neigh_table *tbl, void *pkey,
 	if (n) {
 		return n;
 	}
+
+	printf("__neigh_lookup_errno: neigh_lookup return NULL\n");
 
 	return neigh_create(tbl, pkey, dev);
 }
@@ -149,6 +152,8 @@ int neigh_resolve_output(struct sk_buff *skb) {
 		} else {
 			goto out_kfree_skb;
 		}
+	} else {
+		printf("neigh_resolve_output: neigh_event_send failed\n");
 	}
 
 out:

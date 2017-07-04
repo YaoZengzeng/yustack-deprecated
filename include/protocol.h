@@ -14,4 +14,12 @@ struct net_protocol {
 	void	(*err_handler)(struct sk_buff *skb, uint32_t info);
 };
 
+// This is used to register socket interfaces for IP protocols
+struct inet_protosw {
+	unsigned short	type;	// This is the 2nd argument to socket(2).
+	unsigned short	protocol;	// This is the L4 protocol number
+
+	struct proto 	*prot;
+};
+
 #endif /* _YUSTACK_PROTOCOL_H */

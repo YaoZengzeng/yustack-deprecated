@@ -110,3 +110,18 @@ void skb_queue_tail(struct sk_buff_head *list, struct sk_buff *newsk) {
 struct sk_buff *skb_peek(struct sk_buff_head *list) {
 	return list->next;
 }
+
+struct sk_buff *skb_dequeue(struct sk_buff_head *list) {
+	struct sk_buff *next, *prev, *result;
+
+	prev = (struct sk_buff *) list;
+	next = prev->next;
+	if (next != prev) {
+		result 	= next;
+		next	= next->next;
+		next->prev = prev;
+		prev->next = next;
+		result->next = result->prev = NULL;
+	}
+	return result;
+}

@@ -2,6 +2,7 @@
 #include "lib.h"
 #include "arp.h"
 #include "net.h"
+#include "raw.h"
 #include "ipv4.h"
 #include "icmp.h"
 #include "sock.h"
@@ -20,11 +21,45 @@ struct net_protocol icmp_protocol = {
 	.handler = icmp_rcv,
 };
 
+struct inet_protosw inetsw_array[] = {
+	{
+		.type = SOCK_RAW,
+		.protocol = IPPROTO_IP,		// wild card
+		.prot = &raw_prot,
+	}
+};
+
+#define INETSW_ARRAY_LEN (sizeof(inetsw_array)/sizeof(struct inet_protosw))
+
 // Create an inet socket
 int inet_create(struct socket *sock, int protocol) {
 	struct sock *sk;
+	struct proto *answer_prot;
+	struct inet_protosw *answer;
+	int i;
 
-	sk = sk_alloc(PF_INET);
+	answer = NULL;
+
+	for (i = 0; i < INETSW_ARRAY_LEN; i++) {
+		answer = inetsw_array + i;
+		if (IPPROTO_IP == answer->protocol) {
+			break;
+		}
+		answer = NULL;
+	}
+
+	if (answer == NULL) {
+		printf("inet_create: answer is NULL\n");
+	}
+	answer_prot = answer->prot;
+
+	sk = sk_alloc(PF_INET, answer_prot);
+
+	sk->sk_family = PF_INET;
+	sk->sk_protocol = protocol;
+
+	sock_init_data(sock, sk);
+
 	return 0;
 }
 

@@ -17,7 +17,7 @@ int ip_route_input_slow(struct sk_buff *skb, uint32_t daddr, uint32_t saddr,
 					uint8_t tos, struct net_device *dev) {
 
 	// just walk around
-	skb->dst = (struct dst_entry *) malloc(sizeof(struct dst_entry));
+	skb->dst = (struct dst_entry *) malloc(sizeof(struct rtable));
 	if (skb->dst == NULL) {
 		printf("ip_route_input_slow: malloc failed\n");
 		return -1;
