@@ -67,6 +67,13 @@ int ether_init_module(void) {
 		return -1;
 	}
 
+	// Hard code IP config
+	ret = config_netdevice(dev);
+	if (ret != 0) {
+		printf("ether_init_module: config_netdevice failed\n");
+		return -1;
+	}
+
 	return 0;
 }
 

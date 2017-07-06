@@ -62,6 +62,7 @@ struct packet_type {
 struct net_device *alloc_netdev(int sizeof_priv, const char *name,
 							void (*setup)(struct net_device *));
 int register_netdevice(struct net_device *dev);
+int config_netdevice(struct net_device *dev);
 
 int netif_rx(struct sk_buff *skb);
 int netif_receive_skb(struct sk_buff *skb);

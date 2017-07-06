@@ -54,3 +54,9 @@ int ip_route_input(struct sk_buff *skb, uint32_t daddr, uint32_t saddr,
 	// cache lookup failed, call ip_route_input_slow() to find directly in route table
 	return ip_route_input_slow(skb, daddr, saddr, tos, dev);
 }
+
+int ip_rt_init(void) {
+	int rc = 0;
+
+	ip_fib_init();
+}

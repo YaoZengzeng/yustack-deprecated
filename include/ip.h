@@ -12,5 +12,6 @@ int ip_append_data(struct sock *sk,
 						int odd, struct sk_buff *skb),
 				void *from, int len, int protolen,
 				struct ipcm_cookie *ipc, struct rtable *rt,unsigned int flags);
+void ip_init(void);
 
 #endif /* _YUSTACK_IP_H */

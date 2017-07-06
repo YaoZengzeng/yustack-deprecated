@@ -145,3 +145,7 @@ int ip_push_pending_frames(struct sock *sk) {
 
 	return 0;
 }
+
+void ip_init(void) {
+	ip_rt_init();
+}

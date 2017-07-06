@@ -1,6 +1,10 @@
+#include "if.h"
 #include "lib.h"
 #include "skbuff.h"
+#include "ip_fib.h"
+#include "notifier.h"
 #include "netdevice.h"
+#include "inetdevice.h"
 
 struct net_device *dev_base;
 struct packet_type *ptype_base;
@@ -47,9 +51,35 @@ int register_netdevice(struct net_device *dev) {
 
 	ret = 0;
 
+	// This should be placed in dev_open, now for simplicity
+	fib_netdev_event(NETDEV_UP, dev);
+
 out:
 	return ret;
 }
+
+int config_netdevice(struct net_device *dev) {
+	struct in_ifaddr *ifa = NULL;
+
+	dev->ip_ptr = inetdev_init(dev);
+	if (dev->ip_ptr == NULL) {
+		return -1;
+	}
+
+	ifa = inet_alloc_ifa();
+	if (ifa == NULL) {
+		return -1;
+	}
+
+	ifa->ifa_address = FIXED_IP_ADDR;
+	ifa->ifa_mask = FIXED_NETMASK;
+	ifa->ifa_prefixlen = FIXED_IP_PREFIXLEN;
+	ifa->ifa_broadcast = ifa->ifa_address | ~ifa->ifa_mask;
+
+	return inet_insert_ifa(dev, ifa);
+}
+
+
 
 int netif_rx(struct sk_buff *skb) {
 	return netif_receive_skb(skb);

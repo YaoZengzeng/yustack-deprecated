@@ -1,4 +1,5 @@
 #include "in.h"
+#include "ip.h"
 #include "lib.h"
 #include "arp.h"
 #include "net.h"
@@ -82,7 +83,7 @@ int inet_init(void) {
 		printf("inet_init: add ICMP protocol failed\n");
 	}
 	// Set the IP module up
-	//ip_init();
+	ip_init();
 
 	icmp_init();
 
