@@ -1,7 +1,6 @@
 #include "if.h"
 #include "lib.h"
 #include "skbuff.h"
-#include "ip_fib.h"
 #include "notifier.h"
 #include "netdevice.h"
 #include "inetdevice.h"
@@ -34,6 +33,18 @@ int dev_new_index(void) {
 	return ifindex++;
 }
 
+struct net_device *dev_get_by_index(int ifindex) {
+	struct net_device *dev = dev_base;
+
+	while(dev) {
+		if (dev->ifindex == ifindex) {
+			return dev;
+		}
+	}
+
+	return NULL;
+}
+
 int register_netdevice(struct net_device *dev) {
 	int ret;
 
@@ -50,9 +61,6 @@ int register_netdevice(struct net_device *dev) {
 	dev_base = dev;
 
 	ret = 0;
-
-	// This should be placed in dev_open, now for simplicity
-	fib_netdev_event(NETDEV_UP, dev);
 
 out:
 	return ret;

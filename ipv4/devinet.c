@@ -16,6 +16,7 @@ int inet_insert_ifa(struct net_device *dev, struct in_ifaddr *ifa) {
 	}
 
 	ifa->ifa_next = in_dev->ifa_list;
+	ifa->ifa_dev = in_dev;
 	in_dev->ifa_list = ifa;
 
 	return 0;
@@ -29,6 +30,7 @@ struct in_device *inetdev_init(struct net_device *dev) {
 		printf("inetdev_init: malloc in_device failed\n");
 		return NULL;
 	}
+	memset(in_dev, 0, sizeof(struct in_device));
 
 	in_dev->dev = dev;
 
@@ -41,6 +43,7 @@ struct in_ifaddr *inet_alloc_ifa(void) {
 		printf("inet_alloc_ifa: malloc ifa failed\n");
 		return NULL;
 	}
+	memset(ifa, 0, sizeof(struct in_ifaddr));
 
 	return ifa;
 }

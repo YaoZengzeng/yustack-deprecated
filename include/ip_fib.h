@@ -4,6 +4,24 @@
 #include "types.h"
 #include "netdevice.h"
 
+struct fib_config {
+	uint8_t fc_dst_len;
+
+	uint8_t fc_scope;
+
+	uint8_t fc_type;
+
+	uint32_t fc_table;
+
+	uint32_t fc_dst;
+
+	uint32_t fc_gw;
+
+	int fc_oif;
+
+	uint32_t fc_prefsrc;
+};
+
 struct fib_nh {
 	struct net_device *nh_dev;
 
@@ -54,13 +72,13 @@ struct fib_alias {
 struct fib_node {
 	struct fib_node *next;
 
-	struct fib_alias *head;
+	struct fib_alias *alias_list;
 
 	uint32_t fn_key;
 };
 
 struct fn_zone {
-	struct fib_node *head;
+	struct fib_node *node_list;
 
 	int fz_order;
 
@@ -71,7 +89,26 @@ struct fn_hash {
 	struct fn_zone	*fn_zones[33];
 };
 
+struct flowi {
+	int oif;
+	int iif;
+
+	union {
+		struct {
+			uint32_t 	daddr;
+			uint32_t 	saddr;
+			uint8_t 	tos;
+			uint8_t		scope;
+		} ip4_u;
+	} nl_u;
+	#define fl4_dst nl_u.ip4_u.daddr
+	#define fl4_src nl_u.ip4_u.saddr
+	#define fl4_tos	nl_u.ip4_u.tos
+	#define fl4_scope nl_u.ip4_u.scope
+};
+
 void ip_fib_init(void);
 int fib_netdev_event(unsigned long event, void *ptr);
 
+int fib_lookup(struct flowi *flp, struct fib_result *res);
 #endif /* _YUSTACK_IP_FIB_H */

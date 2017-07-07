@@ -72,6 +72,8 @@ void dev_add_pack(struct packet_type *pt);
 int dev_queue_xmit(struct sk_buff *skb);
 int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev);
 
+struct net_device *dev_get_by_index(int ifindex);
+
 #define LL_RESERVED_SPACE(dev) ((dev)->hard_header_len);
 
 #endif /* _YUSTACK_NETDEVICE_H */

@@ -1,6 +1,8 @@
 #include "lib.h"
+#include "ip_fib.h"
 #include "if_arp.h"
 #include "if_ether.h"
+#include "notifier.h"
 #include "if_packet.h"
 #include "skbuff.h"
 #include "netdevice.h"
@@ -71,6 +73,13 @@ int ether_init_module(void) {
 	ret = config_netdevice(dev);
 	if (ret != 0) {
 		printf("ether_init_module: config_netdevice failed\n");
+		return -1;
+	}
+
+	// This should be placed in dev_open, now for simplicity
+	ret = fib_netdev_event(NETDEV_UP, dev);
+	if (ret != 0) {
+		printf("ether_init_module: fib_netdev_event failed\n");
 		return -1;
 	}
 

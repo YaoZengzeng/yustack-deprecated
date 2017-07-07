@@ -47,7 +47,7 @@ int dst_input(struct sk_buff *skb) {
 int ip_rcv_finish(struct sk_buff *skb) {
 	struct iphdr *iph = skb->nh.iph;
 
-	// Initialise the virtual paht cache for the packet. It describes
+	// Initialise the virtual path cache for the packet. It describes
 	// how the packet travels inside Linux networking
 	if (skb->dst == NULL) {
 		int err = ip_route_input(skb, iph->daddr, iph->saddr, iph->tos,
