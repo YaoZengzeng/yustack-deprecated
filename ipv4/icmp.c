@@ -8,6 +8,7 @@
 #include "route.h"
 #include "socket.h"
 #include "skbuff.h"
+#include "ip_fib.h"
 #include "if_ether.h"
 #include "checksum.h"
 
@@ -74,15 +75,22 @@ void icmp_push_reply(struct icmp_bxm *icmp_param,
 void icmp_reply(struct icmp_bxm *icmp_param, struct sk_buff *skb) {
 	struct ipcm_cookie ipc;
 	struct rtable *rt = (struct rtable *)skb->dst;
+	uint32_t daddr, saddr;
+	int r;
 
-	// No route system, walk around
-	struct iphdr *iph = skb->nh.iph;
+	daddr = rt->rt_src;
+	saddr = rt->rt_dst;
+	struct flowi fl = { .nl_u = { .ip4_u = {
+			.daddr = daddr,
+			.saddr = saddr,
+		} },
+	};
 
-	rt->rt_dst = iph->saddr;
-	rt->rt_src = iph->daddr;
-
-	rt->rt_gateway = iph->saddr;
-
+	r = ip_route_output_key(&rt, &fl);
+	if (r < 0) {
+		printf("icmp_reply: ip_route_output_key failed\n");
+		return -1;
+	}
 	ipc.opt = NULL;
 
 	icmp_push_reply(icmp_param, &ipc, rt);

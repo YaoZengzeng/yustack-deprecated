@@ -111,4 +111,7 @@ void ip_fib_init(void);
 int fib_netdev_event(unsigned long event, void *ptr);
 
 int fib_lookup(struct flowi *flp, struct fib_result *res);
+
+#define FIB_RES_NH(res) ((res).fi->fib_nh[0])
+#define FIB_RES_DEV(res) (FIB_RES_NH(res).nh_dev)
 #endif /* _YUSTACK_IP_FIB_H */
