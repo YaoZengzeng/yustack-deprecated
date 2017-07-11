@@ -10,9 +10,20 @@
 #include "neighbour.h"
 #include "netdevice.h"
 
+void arp_solicit(struct neighbour *neigh, struct sk_buff *skb) {
+	uint32_t saddr = 0;
+	struct net_device *dev = neigh->dev;
+	uint8_t *dst_ha = NULL;
+	uint32_t target = *(uint32_t *)neigh->primary_key;
+
+	saddr = skb->nh.iph->saddr;
+	arp_send(ARPOP_REQUEST, ETH_P_ARP, target, dev, saddr,
+		dst_ha, dev->dev_addr, NULL);
+}
+
 struct neigh_ops arp_generic_ops = {
 	.family = AF_INET,
-	//.solicit = arp_solicit,
+	.solicit = arp_solicit,
 	//.error_report = arp_error_report,
 	.output = neigh_resolve_output,
 	//.connected_output = neigh_connected_output,
@@ -180,6 +191,15 @@ static int arp_process(struct sk_buff *skb) {
 			printf("arp_process: neigh_event_ns failed\n");
 		}
 		goto out;
+	}
+
+	// Update our ARP tables
+	n = __neigh_lookup(&arp_tbl, &sip, dev, 0);
+
+	if (n) {
+		int state = NUD_REACHABLE;
+
+		neigh_update(n, sha, state);
 	}
 
 out:

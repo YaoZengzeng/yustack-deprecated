@@ -7,6 +7,8 @@
 
 #define NUD_NONE	0x00
 
+#define NUD_INCOMPLETE 0x01
+
 #define NUD_REACHABLE 0x02
 
 struct neigh_table;

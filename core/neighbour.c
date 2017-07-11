@@ -79,9 +79,17 @@ struct neighbour *neigh_lookup(struct neigh_table *tbl, void *pkey,
 
 int neigh_update(struct neighbour *neigh, uint8_t *lladdr, uint8_t new) {
 	struct net_device *dev = neigh->dev;
+	struct sk_buff *skb = NULL;
 
 	neigh->nud_state = new;
 	memcpy(neigh->ha, lladdr, dev->addr_len);
+
+	if (neigh->nud_state & NUD_REACHABLE) {
+		while((skb = skb_dequeue(&neigh->arp_queue)) != NULL) {
+			printf("neigh_update: skb_dequeue one\n");
+			neigh->output(skb);
+		}
+	}
 
 	return 0;
 }
@@ -93,8 +101,6 @@ struct neighbour * __neigh_lookup_errno(struct neigh_table *tbl, void *pkey,
 	if (n) {
 		return n;
 	}
-
-	printf("__neigh_lookup_errno: neigh_lookup return NULL\n");
 
 	return neigh_create(tbl, pkey, dev);
 }
@@ -124,11 +130,22 @@ struct neighbour *neigh_event_ns(struct neigh_table *tbl,uint8_t *lladdr,
 }
 
 int neigh_event_send(struct neighbour *neigh, struct skb_buff *skb) {
-	if (neigh->nud_state & NUD_REACHABLE) {
+	if (neigh->nud_state == NUD_REACHABLE) {
 		return 0;
-	} else {
-		return -1;
 	}
+
+	if (neigh->nud_state == NUD_NONE) {
+		neigh->ops->solicit(neigh, skb);
+		neigh->nud_state = NUD_INCOMPLETE;
+	}
+
+	if (neigh->nud_state == NUD_INCOMPLETE) {
+		skb_queue_tail(&neigh->arp_queue, skb);
+		return 1;
+	}
+
+
+	return 0;
 }
 
 // Slow and careful

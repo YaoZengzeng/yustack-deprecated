@@ -116,6 +116,7 @@ struct sk_buff *skb_dequeue(struct sk_buff_head *list) {
 
 	prev = (struct sk_buff *) list;
 	next = prev->next;
+	result = NULL;
 	if (next != prev) {
 		result 	= next;
 		next	= next->next;
