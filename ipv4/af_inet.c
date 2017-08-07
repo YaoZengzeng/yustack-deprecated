@@ -4,6 +4,7 @@
 #include "arp.h"
 #include "net.h"
 #include "raw.h"
+#include "udp.h"
 #include "ipv4.h"
 #include "icmp.h"
 #include "sock.h"
@@ -22,11 +23,23 @@ struct net_protocol icmp_protocol = {
 	.handler = icmp_rcv,
 };
 
+struct net_protocol udp_protocol = {
+	.protocol = IPPROTO_UDP,
+	.handler = udp_rcv,
+};
+
 struct inet_protosw inetsw_array[] = {
 	{
 		.type = SOCK_RAW,
 		.protocol = IPPROTO_IP,		// wild card
 		.prot = &raw_prot,
+	},
+
+	{
+		.type = SOCK_DGRAM,
+		.protocol = IPPROTO_UDP,
+		.prot = &udp_prot,
+		//.ops = &inet_dgram_ops,
 	}
 };
 
@@ -81,6 +94,9 @@ int inet_init(void) {
 	// Add all the base protocols
 	if (inet_add_protocol(&icmp_protocol, IPPROTO_ICMP) < 0) {
 		printf("inet_init: add ICMP protocol failed\n");
+	}
+	if (inet_add_protocol(&udp_protocol, IPPROTO_UDP) < 0) {
+		printf("inet_init: add UDP protocol failed\n");
 	}
 	// Set the IP module up
 	ip_init();

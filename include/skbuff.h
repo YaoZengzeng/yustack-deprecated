@@ -8,6 +8,7 @@ struct net_device;
 #define NET_SKB_PAD 16
 
 struct icmphdr;
+struct udphdr *uh;
 
 struct iphdr;
 struct arphdr;
@@ -23,6 +24,7 @@ struct sk_buff {
 	struct net_device *dev;
 
 	union {
+		struct udphdr *uh;
 		struct icmphdr *icmph;
 		unsigned char *raw;
 	} h;

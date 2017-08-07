@@ -26,6 +26,7 @@ int ip_local_deliver_finish(struct sk_buff *skb) {
 			ret = ipprot->handler(skb);
 			break;
 		}
+		ipprot = ipprot->next;
 	}
 
 	return ret;

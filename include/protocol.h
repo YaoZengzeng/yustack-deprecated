@@ -20,6 +20,8 @@ struct inet_protosw {
 	unsigned short	protocol;	// This is the L4 protocol number
 
 	struct proto 	*prot;
+
+	struct proto_ops *ops;
 };
 
 #endif /* _YUSTACK_PROTOCOL_H */

@@ -22,7 +22,8 @@ OBJFILES = $(OBJ)/main.o \
 		   $(OBJ)/checksum.o \
 		   $(OBJ)/fib_hash.o \
 		   $(OBJ)/fib_frontend.o \
-		   $(OBJ)/devinet.o
+		   $(OBJ)/devinet.o \
+		   $(OBJ)/udp.o
 
 SUBDIRS = $(shell ls -l | grep ^d | awk '{if($$9 != "obj" && $$9 != "include") print $$9}')
 
