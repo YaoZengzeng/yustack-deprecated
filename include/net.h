@@ -13,7 +13,13 @@ enum sock_type {
 
 #define SOCK_MAX (SOCK_RAW + 1)
 
+struct proto_ops {
+	int		family;
+};
+
 struct socket {
+	struct proto_ops	*ops;
+
 	struct sock *sk;
 
 	short 		type;

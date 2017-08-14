@@ -105,6 +105,15 @@ struct flowi {
 	#define fl4_src nl_u.ip4_u.saddr
 	#define fl4_tos	nl_u.ip4_u.tos
 	#define fl4_scope nl_u.ip4_u.scope
+	uint8_t proto;
+	union {
+		struct {
+			uint16_t sport;
+			uint16_t dport;
+		} ports;
+	} uli_u;
+	#define fl_ip_sport uli_u.ports.sport
+	#define fl_ip_dport uli_u.ports.dport
 };
 
 void ip_fib_init(void);

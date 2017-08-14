@@ -12,6 +12,7 @@ struct sock *sk_alloc(int family, struct proto *prot) {
 	}
 
 	sk->sk_family = family;
+	sk->sk_prot = prot;
 
 	skb_queue_head_init(&(sk->sk_write_queue));
 

@@ -149,3 +149,8 @@ int ip_push_pending_frames(struct sock *sk) {
 void ip_init(void) {
 	ip_rt_init();
 }
+
+int ip_generic_getfrag(void *from, char *to, int offset, int len, int odd, struct sk_buff *skb) {
+	printf("ip_generic_getfrag not implemented yet\n");
+	return 0;
+}

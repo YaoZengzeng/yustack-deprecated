@@ -16,6 +16,8 @@ struct net_protocol {
 
 // This is used to register socket interfaces for IP protocols
 struct inet_protosw {
+	struct inet_protosw *next;
+
 	unsigned short	type;	// This is the 2nd argument to socket(2).
 	unsigned short	protocol;	// This is the L4 protocol number
 

@@ -11,8 +11,12 @@ struct ip_options {
 struct inet_sock {
 	struct sock sk;
 
+	uint16_t id;
+
 	struct {
 		struct rtable	*rt;
+
+		struct flowi fl;
 	} cork;
 };
 

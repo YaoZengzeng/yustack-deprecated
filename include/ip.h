@@ -12,6 +12,7 @@ int ip_append_data(struct sock *sk,
 						int odd, struct sk_buff *skb),
 				void *from, int len, int protolen,
 				struct ipcm_cookie *ipc, struct rtable *rt,unsigned int flags);
+int ip_generic_getfrag(void *from, char *to, int offset, int len, int odd, struct sk_buff *skb);
 void ip_init(void);
 
 #endif /* _YUSTACK_IP_H */

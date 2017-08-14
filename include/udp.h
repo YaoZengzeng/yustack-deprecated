@@ -26,4 +26,6 @@ int udp_rcv(struct sk_buff *skb);
 
 extern struct proto udp_prot;
 
+#define udp_sk(sk) ((struct udp_sock *)(sk))
+
 #endif /* _YUSTACK_UDP_H */

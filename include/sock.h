@@ -10,6 +10,8 @@ struct sock {
 	unsigned char sk_protocol;
 
 	struct sk_buff_head	sk_write_queue;
+
+	struct proto 	*sk_prot;
 };
 
 // Networking protocol blocks we attach to sockets
