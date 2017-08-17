@@ -13,6 +13,18 @@ struct inet_sock {
 
 	uint16_t id;
 
+	uint32_t daddr;
+
+	uint32_t rcv_saddr;
+
+	uint16_t dport;
+
+	uint16_t num;
+
+	uint32_t saddr;
+
+	uint16_t sport;
+
 	struct {
 		struct rtable	*rt;
 

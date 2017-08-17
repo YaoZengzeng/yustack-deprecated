@@ -21,6 +21,10 @@ struct proto {
 	char name[32];
 
 	unsigned int obj_size;
+
+	int 	(*sendmsg)(struct sock *sk, struct msghdr *msg, int len);
+
+	int 	(*get_port)(struct sock *sk, unsigned short snum);
 };
 
 struct sock *sk_alloc(int family, struct proto *prot);

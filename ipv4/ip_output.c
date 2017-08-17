@@ -141,6 +141,8 @@ int ip_push_pending_frames(struct sock *sk) {
 	// no route system, just walk around
 	arp_bind_neighbour(skb->dst);
 
+	printf("finish arp_bind_neighbour\n");
+
 	dst_output(skb);
 
 	return 0;
@@ -151,6 +153,9 @@ void ip_init(void) {
 }
 
 int ip_generic_getfrag(void *from, char *to, int offset, int len, int odd, struct sk_buff *skb) {
-	printf("ip_generic_getfrag not implemented yet\n");
+	struct iovec *iov = from;
+
+	memcpy(to, iov->iov_base, len);
+
 	return 0;
 }

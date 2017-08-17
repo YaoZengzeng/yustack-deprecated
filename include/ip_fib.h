@@ -34,6 +34,8 @@ struct fib_nh {
 
 // This structure contains data shared by many of routes
 struct fib_info {
+	uint32_t fib_prefsrc;
+	
 	struct fib_nh fib_nh[0];
 };
 
@@ -123,4 +125,5 @@ int fib_lookup(struct flowi *flp, struct fib_result *res);
 
 #define FIB_RES_NH(res) ((res).fi->fib_nh[0])
 #define FIB_RES_DEV(res) (FIB_RES_NH(res).nh_dev)
+#define FIB_RES_PREFSRC(res) ((res).fi->fib_prefsrc)
 #endif /* _YUSTACK_IP_FIB_H */

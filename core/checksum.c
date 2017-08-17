@@ -17,3 +17,16 @@ uint16_t checksum(uint16_t* buff, int size) {
 
 	return (uint16_t)(~cksum);
 }
+
+uint16_t csum_tcpudp_magic(uint32_t saddr, uint32_t daddr,
+					unsigned short len, unsigned short proto, uint16_t sum) {
+	uint32_t cksum = ~sum & 0xffff;
+	cksum = cksum + (saddr & 0xffff) + (saddr >> 16);
+	cksum = cksum + (daddr & 0xffff) + (daddr >> 16);
+
+	cksum = cksum + len + htons(proto);
+	cksum = (cksum >> 16) + (cksum & 0xffff);
+	cksum += (cksum >> 16);
+
+	return (uint16_t)(~cksum);
+}

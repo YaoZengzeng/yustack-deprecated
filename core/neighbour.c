@@ -135,6 +135,7 @@ int neigh_event_send(struct neighbour *neigh, struct skb_buff *skb) {
 	}
 
 	if (neigh->nud_state == NUD_NONE) {
+		printf("neigh_event_send: send an neigh solicit\n");
 		neigh->ops->solicit(neigh, skb);
 		neigh->nud_state = NUD_INCOMPLETE;
 	}

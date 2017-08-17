@@ -2,6 +2,7 @@
 #define _YUSTACK_NET_H
 
 #include "sock.h"
+#include "socket.h"
 
 #define NPROTO	32
 
@@ -13,16 +14,17 @@ enum sock_type {
 
 #define SOCK_MAX (SOCK_RAW + 1)
 
-struct proto_ops {
-	int		family;
-};
-
 struct socket {
 	struct proto_ops	*ops;
 
 	struct sock *sk;
 
 	short 		type;
+};
+
+struct proto_ops {
+	int		family;
+	int		(*sendmsg) (struct socket *sock, struct msghdr *m, int total_len);
 };
 
 struct net_proto_family {

@@ -28,8 +28,38 @@ struct net_protocol udp_protocol = {
 	.handler = udp_rcv,
 };
 
+// Automatically bind an unbound socket
+int inet_autobind(struct sock *sk) {
+	struct inet_sock *inet;
+
+	// We may need to bind the socket
+	inet = inet_sk(sk);
+	if (!inet->num) {
+		if (sk->sk_prot->get_port(sk, 0)) {
+			printf("inet_autobind: get_port failed\n");
+			return -1;
+		}
+		inet->sport = htons(inet->num);
+	}
+
+	return 0;
+}
+
+int inet_sendmsg(struct socket *sock, struct msghdr *msg, int size) {
+	struct sock *sk = sock->sk;
+
+	// We may need to bind the socket
+	if (!inet_sk(sk)->num && inet_autobind(sk)) {
+		printf("inet_sendmsg: inet_autobind failed\n");
+		return -1;
+	}
+
+	return sk->sk_prot->sendmsg(sk, msg, size);
+}
+
 struct proto_ops inet_dgram_ops = {
 	.family = PF_INET,
+	.sendmsg = inet_sendmsg,
 };
 
 struct inet_protosw inetsw_array[] = {
@@ -46,8 +76,6 @@ struct inet_protosw inetsw_array[] = {
 		.ops = &inet_dgram_ops,
 	}
 };
-
-struct inet_protosw *inetsw; 
 
 #define INETSW_ARRAY_LEN (sizeof(inetsw_array)/sizeof(struct inet_protosw))
 
@@ -66,16 +94,20 @@ int inet_create(struct socket *sock, int protocol) {
 		if (protocol == answer->protocol) {
 			break;
 		}
-		if (IPPROTO_IP == answer->protocol) {
-			break;
-		}
 		answer = NULL;
 	}
-	sock->ops = answer->ops;
+
+	// work around
+	if (protocol == IPPROTO_ICMP) {
+		answer = inetsw_array;
+	}
 
 	if (answer == NULL) {
 		printf("inet_create: answer is NULL\n");
 	}
+
+	sock->ops = answer->ops;
+
 	answer_prot = answer->prot;
 
 	sk = sk_alloc(PF_INET, answer_prot);
@@ -97,13 +129,6 @@ struct net_proto_family inet_family_ops = {
 	.create = inet_create,
 };
 
-void inet_register_protosw(struct inet_protosw *p) {
-	p->next = inetsw;
-	inetsw = p;
-
-	return;
-}
-
 int inet_init(void) {
 	int rc = -1;
 	struct inet_protosw *q;
@@ -121,12 +146,6 @@ int inet_init(void) {
 	if (inet_add_protocol(&udp_protocol, IPPROTO_UDP) < 0) {
 		printf("inet_init: add UDP protocol failed\n");
 	}
-
-	inetsw = NULL;
-	for (q = inetsw_array; q < &inetsw_array[INETSW_ARRAY_LEN]; q++) {
-		inet_register_protosw(q);
-	}
-
 
 	// Set the IP module up
 	ip_init();

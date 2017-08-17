@@ -1,4 +1,4 @@
-CC = gcc
+CC = gcc -pthread
 
 ROOT = $(shell pwd)
 OBJ = $(ROOT)/obj

@@ -145,6 +145,10 @@ int ip_route_output_slow(struct rtable **rp, struct flowi *oldflp) {
 		return -1;
 	}
 
+	if (!fl.fl4_src) {
+		fl.fl4_src = FIB_RES_PREFSRC(res);
+	}
+
 	err = ip_mkroute_output(rp, &res, &fl, oldflp, dev_out, flags);
 
 	return err;

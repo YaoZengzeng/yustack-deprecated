@@ -13,6 +13,7 @@ struct fib_info *fib_create_info(struct fib_config *cfg) {
 		printf("fib_create_info: malloc failed\n");
 		return NULL;
 	}
+	fi->fib_prefsrc = cfg->fc_prefsrc;
 
 	struct fib_nh *nh = fi->fib_nh;
 	nh->nh_oif = cfg->fc_oif;
