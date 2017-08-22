@@ -1,5 +1,6 @@
 #include "lib.h"
 #include "dst.h"
+#include "arp.h"
 #include "ipv4.h"
 #include "sock.h"
 #include "skbuff.h"
@@ -140,8 +141,6 @@ int ip_push_pending_frames(struct sock *sk) {
 
 	// no route system, just walk around
 	arp_bind_neighbour(skb->dst);
-
-	printf("finish arp_bind_neighbour\n");
 
 	dst_output(skb);
 

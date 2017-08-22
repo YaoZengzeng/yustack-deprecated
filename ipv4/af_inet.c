@@ -57,9 +57,26 @@ int inet_sendmsg(struct socket *sock, struct msghdr *msg, int size) {
 	return sk->sk_prot->sendmsg(sk, msg, size);
 }
 
+int inet_bind(struct socket *sock, struct sockaddr *uaddr, int addrlen) {
+	struct sockaddr_in *addr = (struct sockaddr_in *)uaddr;
+	struct sock *sk = sock->sk;
+	unsigned short snum;
+
+	snum = ntohs(addr->sin_port);
+
+	if (sk->sk_prot->get_port(sk, snum) != 0) {
+		printf("inet_bind: sk->sk_prot->get_port failed\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 struct proto_ops inet_dgram_ops = {
 	.family = PF_INET,
 	.sendmsg = inet_sendmsg,
+	.recvmsg = sock_common_recvmsg,
+	.bind = inet_bind,
 };
 
 struct inet_protosw inetsw_array[] = {

@@ -145,9 +145,58 @@ int udp_v4_get_port(struct sock *sk, unsigned short snum) {
 			return -1;
 		}
 		snum = port;
+	} else {
+		if (snum >= MAXUDPSOCKNUM) {
+			printf("udp_v4_get_port: snum >= MAXUDPSOCKNUM\n");
+			return -1;
+		}
+		if (udptable[snum].used) {
+			printf("udp_v4_get_port: snum already been used\n");
+			return -1;
+		}
+		udptable[snum].sk = sk;
+		udptable[snum].used = 1;
 	}
 
 	inet_sk(sk)->num = snum;
+
+	return 0;
+}
+
+// This should be easy, if there is something there we return it, otherwise we block
+int udp_recvmsg(struct sock *sk, struct msghdr *msg, int len,
+			int nonblock, int flags, int *addr_len) {
+	struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
+	struct sk_buff *skb;
+	int err, copied;
+
+	// Check any passed address
+	if (addr_len) {
+		*addr_len = sizeof(*sin);
+	}
+
+	skb = skb_recv_datagram(sk, flags, nonblock, &err);
+	if (skb == NULL) {
+		printf("udp_recvmsg: skb_recv_datagram failed\n");
+		return -1;
+	}
+
+	copied = skb->len - sizeof(struct udphdr);
+	if (copied > len) {
+		copied = len;
+	}
+
+	err = skb_copy_datagram_iovec(skb, sizeof(struct udphdr), msg->msg_iov, copied);
+	if (err != 0) {
+		printf("udp_recvmsg: skb_copy_datagram_iovec failed\n");
+		return -1;
+	}
+
+	if (sin) {
+		sin->sin_family = AF_INET;
+		sin->sin_port = skb->h.uh->source;
+		sin->sin_addr.s_addr = skb->nh.iph->saddr;
+	}
 
 	return 0;
 }
@@ -156,6 +205,7 @@ struct proto udp_prot = {
 	.name = "UDP",
 	.obj_size = sizeof(struct udp_sock),
 	.sendmsg  = udp_sendmsg,
+	.recvmsg  = udp_recvmsg,
 	.get_port = udp_v4_get_port,
 };
 
@@ -166,8 +216,13 @@ struct sock * __udp4_lib_lookup(uint32_t saddr, uint16_t sport,
 	struct sock *sk, *result = NULL;
 	unsigned short hnum = ntohs(dport);
 
+	if (hnum < MAXUDPSOCKNUM && udptable[hnum].used) {
+		return udptable[hnum].sk;
+	}
 
-	return result;
+	printf("__udp4_lib_lookup failed\n");
+
+	return NULL;
 }
 
 // return:
@@ -178,8 +233,13 @@ struct sock * __udp4_lib_lookup(uint32_t saddr, uint16_t sport,
 // Note that in the success and error cases, the skb is assumed to
 // have either been requested or freed
 int udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb) {
+	int rc;
 
-	printf("udp_queue_rcv_skb not implemented yet\n");
+	rc = sock_queue_rcv_skb(sk, skb);
+	if (rc != 0) {
+		printf("udp_queue_rcv_skb: sock_queue_rcv_skb failed\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -216,6 +276,5 @@ drop:
 }
 
 int udp_rcv(struct sk_buff *skb) {
-	printf("udp_rcv get an packet\n");
 	return __udp4_lib_rcv(skb);
 }

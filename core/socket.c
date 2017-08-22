@@ -5,6 +5,8 @@
 
 struct net_proto_family *net_families[NPROTO];
 
+#define MAX_SOCK_ADDR 128
+
 struct socket_map {
 	struct socket *sock;
 	int used;
@@ -141,6 +143,67 @@ int sys_sendto(int fd, void *buff, int len, unsigned flags,
 	err = sock_sendmsg(sock, &msg, len);
 	if (err != 0) {
 		printf("sys_sendto: sock_sendmsg failed\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int sock_recvmsg(struct socket *sock, struct msghdr *msg, int size, int flags) {
+	return sock->ops->recvmsg(sock, msg, size, flags);
+}
+
+// Receive a frame from the socket and optionally record the address of the sender.
+// We verify the buffers are writable and if needed move the sender address from
+// kernel to user space.
+int sys_recvfrom(int fd, void *ubuf, int size, unsigned flags,
+			struct sockaddr *addr, int *addr_len) {
+	struct socket *sock;
+	struct iovec iov;
+	struct msghdr msg;
+	char address[MAX_SOCK_ADDR];
+	int err;
+
+	sock = sock_from_fd(fd);
+	if (sock == NULL) {
+		printf("sys_recvfrom: sock_from_fd failed\n");
+		return -1;
+	}
+
+	msg.msg_iovlen = 1;
+	msg.msg_iov = &iov;
+	iov.iov_len = size;
+	iov.iov_base = ubuf;
+	msg.msg_name = address;
+	msg.msg_namelen = MAX_SOCK_ADDR;
+
+	err = sock_recvmsg(sock, &msg, size, flags);
+	if (err < 0) {
+		printf("sys_recvfrom: sock_recvmsg failed\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+// Receive a datagram from a socket
+int sys_recv(int fd, void *ubuf, int size, unsigned flags) {
+	return sys_recvfrom(fd, ubuf, size, flags, NULL, NULL);
+}
+
+int sys_bind(int fd, struct sockaddr *addr, int addrlen) {
+	struct socket *sock;
+	int err;
+
+	sock = sock_from_fd(fd);
+	if (sock == NULL) {
+		printf("sys_bind: sock_from_fd failed\n");
+		return -1;
+	}
+
+	err = sock->ops->bind(sock, addr, addrlen);
+	if (err != 0) {
+		printf("sys_bind sock->ops->bind failed\n");
 		return -1;
 	}
 

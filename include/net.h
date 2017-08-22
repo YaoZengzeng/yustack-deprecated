@@ -25,6 +25,8 @@ struct socket {
 struct proto_ops {
 	int		family;
 	int		(*sendmsg) (struct socket *sock, struct msghdr *m, int total_len);
+	int 	(*recvmsg) (struct socket *sock, struct msghdr *m, int total_len, int flags);
+	int 	(*bind) (struct socket *sock, struct sockaddr *uaddr, int sockaddr_len);
 };
 
 struct net_proto_family {

@@ -15,6 +15,10 @@ struct arphdr;
 
 struct dst_entry;
 
+struct iovec;
+
+struct sock;
+
 struct sk_buff {
 	// These two members must be first
 	struct sk_buff	*next;
@@ -79,5 +83,8 @@ void skb_queue_head(struct sk_buff_head *list, struct sk_buff *newsk);
 void skb_queue_tail(struct sk_buff_head *list, struct sk_buff *newsk);
 
 struct sk_buff *skb_peek(struct sk_buff_head *list);
+
+struct sk_buff *skb_recv_datagram(struct sock *sk, unsigned flags, int noblock, int *err);
+int skb_copy_datagram_iovec(struct sk_buff *from, int offset, struct iovec *to, int size);
 
 #endif /* _YUSTACK_SKBUFF_H */
