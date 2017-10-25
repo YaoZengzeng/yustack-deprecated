@@ -18,6 +18,7 @@ struct fib_info *fib_create_info(struct fib_config *cfg) {
 	struct fib_nh *nh = fi->fib_nh;
 	nh->nh_oif = cfg->fc_oif;
 	nh->nh_dev = dev_get_by_index(fi->fib_nh->nh_oif);
+	// cfg->fc_gw not initialized in fib_magic()
 	nh->nh_gw = cfg->fc_gw;
 
 	return fi;
@@ -29,6 +30,7 @@ struct fn_zone *fn_new_zone(struct fn_hash *table, int z) {
 		printf("fn_new_zone: malloc failed\n");
 		return NULL;
 	}
+	memset(fz, 0, sizeof(struct fn_zone));
 	fz->fz_order = z;
 	fz->fz_mask = inet_make_mask(z);
 	table->fn_zones[z] = fz;
@@ -38,10 +40,15 @@ struct fn_zone *fn_new_zone(struct fn_hash *table, int z) {
 
 int fn_hash_insert(struct fib_table *tb, struct fib_config *cfg) {
 	struct fn_hash *table = (struct fn_hash *) tb->tb_data;
-	struct fib_node *f;
-	struct fib_alias *fa;
+	struct fib_node *new_f;
+	struct fib_alias *new_fa;
 	struct fn_zone *fz;
 	struct fib_info *fi;
+
+	if (cfg->fc_dst_len > 32) {
+		printf("fn_hash_insert: cfg->fc_dst_len > 32\n");
+		return -1;
+	}
 
 	fz = table->fn_zones[cfg->fc_dst_len];
 	if (!fz && !(fz = fn_new_zone(table, cfg->fc_dst_len))) {
@@ -51,34 +58,36 @@ int fn_hash_insert(struct fib_table *tb, struct fib_config *cfg) {
 
 	fi = fib_create_info(cfg);
 
-	fa = (struct fib_alias *)malloc(sizeof(struct fib_alias));
-	if (fa == NULL) {
+	// For simpilicity, we will never insert duplicate routes
+	// so we malloc fib_node and fib_alias every time
+	new_fa = (struct fib_alias *)malloc(sizeof(struct fib_alias));
+	if (new_fa == NULL) {
 		printf("fn_hash_insert: malloc fib_alias failed\n");
 		return -1;
 	}
-	memset(fa, 0, sizeof(struct fib_alias));
+	memset(new_fa, 0, sizeof(struct fib_alias));
 
-	f = (struct fib_node *)malloc(sizeof(struct fib_node));
-	if (f == NULL) {
+	new_f = (struct fib_node *)malloc(sizeof(struct fib_node));
+	if (new_f == NULL) {
 		printf("fn_hash_insert: malloc fib_node failed\n");
 		return -1;
 	}
-	memset(f, 0, sizeof(struct fib_node));
+	memset(new_f, 0, sizeof(struct fib_node));
 
 	// set key as the cfg->fc_dst;
-	f->fn_key = cfg->fc_dst & inet_make_mask(cfg->fc_dst_len);
+	new_f->fn_key = cfg->fc_dst & inet_make_mask(cfg->fc_dst_len);
 
-	fa->fa_info = fi;
-	fa->fa_type = cfg->fc_type;
-	fa->fa_scope = cfg->fc_scope;
+	new_fa->fa_info = fi;
+	new_fa->fa_type = cfg->fc_type;
+	// fa->fa_scope = cfg->fc_scope;
 
 	// Insert alias to node
-	fa->next = f->alias_list;
-	f->alias_list = fa;
+	new_fa->next = new_f->alias_list;
+	new_f->alias_list = new_fa;
 
 	// Insert node to zone
-	f->next = fz->node_list;
-	fz->node_list = f;
+	new_f->next = fz->node_list;
+	fz->node_list = new_f;
 
 	return 0;
 }
@@ -136,9 +145,10 @@ struct fib_table *fib_hash_init(uint32_t id) {
 
 	tb->tb_id = id;
 
-	memset(tb->tb_data, 0, sizeof(struct fn_hash));
-
 	tb->tb_lookup = fn_hash_lookup;
 	tb->tb_insert = fn_hash_insert;
+	// tb->tb_delete = fn_hash_delete;
+	// tb->tb_dump = fn_hash_dump;
+	memset(tb->tb_data, 0, sizeof(struct fn_hash));
 	return tb;
 }

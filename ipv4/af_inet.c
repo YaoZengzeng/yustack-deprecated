@@ -13,6 +13,7 @@
 #include "protocol.h"
 #include "netdevice.h"
 
+// IP protocol layer initializer
 struct packet_type ip_packet_type = {
 	.type = htons(ETH_P_IP),
 	.func = ip_rcv,
@@ -141,6 +142,7 @@ int inet_create(struct socket *sock, int protocol) {
 	return 0;
 }
 
+// Used to create socket
 struct net_proto_family inet_family_ops = {
 	.family = PF_INET,
 	.create = inet_create,
@@ -153,9 +155,6 @@ int inet_init(void) {
 	// Tell SOCKET that we are alive...
 	sock_register(&inet_family_ops);
 
-	// Set the ARP module up
-	arp_init();
-
 	// Add all the base protocols
 	if (inet_add_protocol(&icmp_protocol, IPPROTO_ICMP) < 0) {
 		printf("inet_init: add ICMP protocol failed\n");
@@ -164,9 +163,13 @@ int inet_init(void) {
 		printf("inet_init: add UDP protocol failed\n");
 	}
 
+	// Set the ARP module up
+	arp_init();
+
 	// Set the IP module up
 	ip_init();
 
+	// Set the ICMP layer up
 	icmp_init();
 
 	dev_add_pack(&ip_packet_type);

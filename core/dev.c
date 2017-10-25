@@ -48,13 +48,6 @@ struct net_device *dev_get_by_index(int ifindex) {
 int register_netdevice(struct net_device *dev) {
 	int ret;
 
-	if (dev->init) {
-		ret = dev->init(dev);
-		if (ret) {
-			goto out;
-		}
-	}
-
 	dev->ifindex = dev_new_index();
 
 	dev->next = dev_base;

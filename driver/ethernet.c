@@ -16,7 +16,9 @@ int eth_header(struct sk_buff *skb, struct net_device *dev, unsigned short type,
 
 	eth->h_proto = htons(type);
 
+	// Set the source hardware address
 	if (!saddr) {
+		// NULL use device source address
 		saddr = dev->dev_addr;
 	}
 	memcpy(eth->h_source, saddr, dev->addr_len);
@@ -25,6 +27,11 @@ int eth_header(struct sk_buff *skb, struct net_device *dev, unsigned short type,
 		memcpy(eth->h_dest, daddr, dev->addr_len);
 		return ETH_HLEN;
 	}
+
+	// Anyway, the loopback-device should never use this function
+/*	if (dev->flags & (IFF_LOOPBACK | IF_NOARP)) {
+		memset(eth->h_dest, 0, dev->addr_len);
+	}*/
 
 	return -1;
 }
@@ -57,12 +64,14 @@ int ether_init_module(void) {
 	struct net_device *dev;
 	int ret;
 
+	// alloc net_device structure and initialize
 	dev = alloc_netdev(0, "eth0", ether_setup);
 	if (dev == NULL) {
 		printf("ether_init_module: alloc_netdev failed\n");
 		return -1;
 	}
 
+	// put dev to dev_base list
 	ret = register_netdevice(dev);
 	if (ret != 0) {
 		printf("ether_init_module: register_netdev failed\n");

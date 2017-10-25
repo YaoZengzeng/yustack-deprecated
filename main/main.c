@@ -59,12 +59,13 @@ int test() {
 int main(int argc, char **argv) {
 	pthread_t threadid;
 
-	if (inet_init() != 0) {
-		printf("inet module initialize failed\n");
-		return -1;
-	}
 	if (tapdevice_init() != 0 ) {
 		printf("tapdevice_init failed\n");
+		return -1;
+	}
+
+	if (inet_init() != 0) {
+		printf("inet module initialize failed\n");
 		return -1;
 	}
 

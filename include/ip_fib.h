@@ -25,8 +25,6 @@ struct fib_config {
 struct fib_nh {
 	struct net_device *nh_dev;
 
-	unsigned char nh_scope;
-
 	int nh_oif;
 
 	uint32_t nh_gw;
@@ -81,9 +79,9 @@ struct fib_node {
 
 struct fn_zone {
 	struct fib_node *node_list;
-
+	// for mask 255.255.255.0, fz_order is 24
 	int fz_order;
-
+	// if fz_order is 3, then fz_mask is 244.0.0.0
 	uint32_t fz_mask;
 };
 

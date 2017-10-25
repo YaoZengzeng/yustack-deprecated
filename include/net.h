@@ -4,7 +4,7 @@
 #include "sock.h"
 #include "socket.h"
 
-#define NPROTO	32
+#define NPROTO	32		/* should be enough for now... */
 
 enum sock_type {
 	SOCK_STREAM	= 1,

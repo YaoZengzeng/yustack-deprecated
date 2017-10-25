@@ -37,16 +37,6 @@ struct net_device {
 
 	int 	(*hard_start_xmit) (struct sk_buff *skb, struct net_device *dev);
 
-	// The device initialization function. Called only once
-	int 	(*init)(struct net_device *dev);
-	// Called after device is detached from network
-	void	(*uninit)(struct net_device *dev);
-	// Called after last user reference disappears
-	void 	(*destructor)(struct net_device *dev);
-
-	int 	(*open)(struct net_device *dev);
-	int 	(*stop)(struct net_device *dev);
-
 	// for ehternet is eth_header()
 	int 	(*hard_header)(struct sk_buff *skb, struct net_device *dev,
 						unsigned short type, void *daddr, void *saddr, unsigned len);

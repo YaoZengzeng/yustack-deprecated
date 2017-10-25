@@ -35,9 +35,13 @@ void fib_magic(int cmd, int type, uint32_t dst, int dst_len, struct in_ifaddr *i
 		.fc_oif = ifa->ifa_dev->dev->ifindex,
 	};
 
+	// RT_TABLE_LOCAL -> ip_fib_local_table
+	// else ip_fib_main_table
 	if (type == RTN_UNICAST) {
+		// RTN_UNICAST->RT_TABLE_MAIN
 		tb = fib_new_table(RT_TABLE_MAIN);
 	} else {
+		// RTN_LOCAL or RTN_BROADCAST -> RT_TABLE_LOCAL
 		tb = fib_new_table(RT_TABLE_LOCAL);
 	}
 
@@ -63,16 +67,24 @@ void fib_add_ifaddr(struct in_ifaddr *ifa) {
 	struct net_device *dev = in_dev->dev;
 	struct in_ifaddr *prim = ifa;
 	uint32_t mask = ifa->ifa_mask;
+	// addr = 192.168.1.2/24
 	uint32_t addr = ifa->ifa_address;
+	// prefix = 192.168.1.0
 	uint32_t prefix = ifa->ifa_address & mask;
 
+	// Ignore secondary address check
+
+	// To 192.168.1.2/32
 	fib_magic(RTM_NEWROUTE, RTN_LOCAL, addr, 32, prim);
 
+	// To 192.168.1.0/24
 	fib_magic(RTM_NEWROUTE, RTN_UNICAST, prefix, ifa->ifa_prefixlen, prim);
 
 	// Add network specific broadcasts, when it takes a sense
-	if (ifa->ifa_prefixlen < 32) {
+	if (ifa->ifa_prefixlen < 31) {
+		// To broadcast 192.168.1.0/32
 		fib_magic(RTM_NEWROUTE, RTN_BROADCAST, prefix, 32, prim);
+		// To broadcast 192.168.1.255/32
 		fib_magic(RTM_NEWROUTE, RTN_BROADCAST, prefix|~mask, 32, prim);
 	}
 }
