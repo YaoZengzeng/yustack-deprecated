@@ -105,6 +105,7 @@ struct flowi {
 	#define fl4_src nl_u.ip4_u.saddr
 	#define fl4_tos	nl_u.ip4_u.tos
 	#define fl4_scope nl_u.ip4_u.scope
+	// layer 4 protocol
 	uint8_t proto;
 	union {
 		struct {

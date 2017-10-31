@@ -13,10 +13,20 @@ struct rtable {
 		struct rtable *rt_next;
 	} u;
 
+	struct in_device *idev;
+
+	int rt_iif;
+
+	uint16_t rt_type;
+
 	uint32_t rt_dst;	// Path destination
 	uint32_t rt_src;	// Path source
 
+	// Info on neighbour
 	uint32_t rt_gateway;
+
+	// Cache lookup keys
+	struct flowi fl;
 };
 
 int ip_rt_init(void);

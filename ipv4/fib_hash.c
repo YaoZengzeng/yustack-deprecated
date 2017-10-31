@@ -79,7 +79,8 @@ int fn_hash_insert(struct fib_table *tb, struct fib_config *cfg) {
 
 	new_fa->fa_info = fi;
 	new_fa->fa_type = cfg->fc_type;
-	// fa->fa_scope = cfg->fc_scope;
+	// not configure scope now
+	// new_fa->fa_scope = cfg->fc_scope;
 
 	// Insert alias to node
 	new_fa->next = new_f->alias_list;
@@ -124,6 +125,7 @@ int fn_hash_lookup(struct fib_table *tb, struct flowi *flp, struct fib_result *r
 				node = node->next;
 				continue;
 			}
+			// for mask 255.255.255.0, fz_order is 24
 			err = fib_semantic_match(node->alias_list, 
 								flp, res,
 								node->fn_key, fz->fz_mask,

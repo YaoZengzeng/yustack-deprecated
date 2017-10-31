@@ -81,7 +81,9 @@ int config_netdevice(struct net_device *dev) {
 }
 
 
-
+// In linux kernel, netif_rx receives a packet from a device driver and queues it for
+// the upper (protocol) levels to process.
+// But for simplicity, we don't queue it, just send it to upper protocol.
 int netif_rx(struct sk_buff *skb) {
 	return netif_receive_skb(skb);
 }
@@ -89,18 +91,24 @@ int netif_rx(struct sk_buff *skb) {
 int netif_receive_skb(struct sk_buff *skb) {
 	struct packet_type *ptype;
 	uint16_t type;
+	// NET_RX_SUCCESS is 0
 	int ret = NET_RX_DROP;
+
+	if (!skb->input_dev) {
+		skb->input_dev = skb->dev;
+	}
 
 	skb->h.raw = skb->nh.raw = skb->data;
 	skb->mac_len = skb->nh.raw - skb->mac.raw;
+
+	// Maybe handle bridge here.
 
 	ptype = ptype_base;
 	type = skb->protocol;
 	while(ptype) {
 		if (ptype->type == type && 
 			(!ptype->dev || ptype->dev == skb->dev)) {
-			ptype->func(skb, skb->dev, ptype);
-			ret = NET_RX_SUCCESS;
+			ret = ptype->func(skb, skb->dev, ptype);
 			break;
 		}
 		ptype = ptype->next;

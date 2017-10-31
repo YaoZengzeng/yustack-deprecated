@@ -18,6 +18,7 @@ int ip_local_deliver_finish(struct sk_buff *skb) {
 	// Point into the IP datagram, just past the header
 	skb->h.raw = skb->data;
 
+	// Layer 4 protocol
 	int protocol = skb->nh.iph->protocol;
 	struct net_protocol *ipprot = inet_protos;
 
@@ -34,8 +35,7 @@ int ip_local_deliver_finish(struct sk_buff *skb) {
 
 // Deliver IP Packets to the higher protocol layers
 int ip_local_deliver(struct sk_buff *skb) {
-	// Reassemble IP fragments
-	// ...
+	// Reassemble IP fragments, ignore it now
 
 	return ip_local_deliver_finish(skb);
 }
@@ -59,6 +59,7 @@ int ip_rcv_finish(struct sk_buff *skb) {
 		}
 	}
 
+	// No option processing now
 /*	if (iph->ihl > 5 && ip_rcv_options(skb)) {
 		printf("ip_rcv_finish: ip_rcv_options failed\n");
 		goto drop;
@@ -94,8 +95,9 @@ int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt) 
 	//
 	// 1. Length at least the size of an ip header
 	// 2. Version of 4
-	// 3. Checksums correctly
+	// 3. Checksums correctly. [Speed optimisation for later, skip loopback checksums]
 	// 4. Doesn't have a bogus length
+
 	if (iph->ihl < 5 || iph->version != 4) {
 		printf("ip_rcv: iph->ihl < 5 or iph->version != 4\n");
 		goto drop;
@@ -105,7 +107,6 @@ int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt) 
 		printf("ip_rcv: skb is too small, < iph->ihl * 4\n");
 		goto drop;
 	}
-
 
 	if (checksum((uint16_t *)iph, iph->ihl * 4)) {
 		printf("ip_rcv: checksum failed\n");

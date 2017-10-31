@@ -3,7 +3,7 @@
 #include "skbuff.h"
 #include "netdevice.h"
 
-struct sk_buff *alloc_skb(unsigned int length) {
+struct sk_buff *alloc_skb(unsigned int size) {
 	struct sk_buff *skb;
 	uint8_t	*data;
 
@@ -14,7 +14,7 @@ struct sk_buff *alloc_skb(unsigned int length) {
 	}
 	memset(skb, 0, sizeof(struct sk_buff));
 
-	data = malloc(length);
+	data = malloc(size);
 	if (data == NULL) {
 		printf("alloc_skb: malloc data failed\n");
 		return NULL;
@@ -23,7 +23,7 @@ struct sk_buff *alloc_skb(unsigned int length) {
 	skb->head = data;
 	skb->data = data;
 	skb->tail = data;
-	skb->end  = data + length;
+	skb->end  = data + size;
 
 	return skb;
 }

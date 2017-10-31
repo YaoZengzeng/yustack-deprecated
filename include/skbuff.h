@@ -27,6 +27,8 @@ struct sk_buff {
 	//struct sock	*sk;
 	struct net_device *dev;
 
+	struct net_device *input_dev;
+
 	union {
 		struct udphdr *uh;
 		struct icmphdr *icmph;

@@ -9,6 +9,12 @@
 #include "rtnetlink.h"
 #include "netdevice.h"
 
+int ip_rt_bug(struct sk_buff *skb) {
+	printf("ip_rt_bug: maybe you should not invoke this function in the datapath\n");
+
+	return 0;
+}
+
 // NOTE. We drop all the packets that has local source addresses
 // because every properly looped back packet must have correct
 // destination attached by output routine.
@@ -38,6 +44,7 @@ int ip_route_input_slow(struct sk_buff *skb, uint32_t daddr, uint32_t saddr,
 		return -1;
 	}
 
+	// For example, to address 192.168.1.2/32
 	if (res.type == RTN_LOCAL) {
 		goto local_input;
 	} else {
@@ -53,9 +60,14 @@ local_input:
 	}
 	rth->u.dst.dev = dev;
 	rth->u.dst.input = ip_local_deliver;
-	rth->u.dst.output = ip_output;
+	rth->u.dst.output = ip_rt_bug;
+	rth->rt_gateway = daddr;
 	rth->rt_dst = daddr;
 	rth->rt_src = saddr;
+	rth->rt_iif = dev->ifindex;
+	rth->rt_type = res.type;
+	// In linux kernel, we assign every fields of fl in turn
+	rth->fl = fl;
 
 	skb->dst = (struct dst_entry *)rth;
 
@@ -64,6 +76,8 @@ local_input:
 
 int ip_route_input(struct sk_buff *skb, uint32_t daddr, uint32_t saddr,
 			uint8_t tos, struct net_device *dev) {
+	// Temporarily do not do routing cache lookup
+
 	// cache lookup failed, call ip_route_input_slow() to find directly in route table
 	return ip_route_input_slow(skb, daddr, saddr, tos, dev);
 }
@@ -73,6 +87,11 @@ int __mkroute_output(struct rtable **result, struct fib_result *res,
 				struct net_device *dev_out, unsigned flags) {
 	struct rtable *rth;
 	struct in_device *in_dev = NULL;
+
+	// If the destination address is loopback, the output device should be loopback device
+	// if (LOOPBACK(fl->fl4_src) && !(dev_out->flags & IFF_LOOPBACK)) {
+	//	return -1;
+	// }
 
 	// Get work reference to inet device
 	in_dev = in_dev_get(dev_out);
@@ -87,8 +106,13 @@ int __mkroute_output(struct rtable **result, struct fib_result *res,
 		return -1;
 	}
 
+	// rth->fl.fl4_dst = oldflp->fl4_dst;
+	// rth->fl.fl4_tos = tos;
+	// rth->fl.fl4_src = oldflp->fl4_src;
+	// rth->fl.mark = oldflp->mark;
 	rth->rt_dst = fl->fl4_dst;
 	rth->rt_src = fl->fl4_src;
+	rth->fl.oif = oldflp->oif;
 	// Get references to the devices that are to be hold by the routing
 	// cache entry
 	rth->u.dst.dev = dev_out;
@@ -112,6 +136,8 @@ int ip_mkroute_output_def(struct rtable **rp, struct fib_result *res,
 		printf("ip_mkroute_output_def: __mkroute_output failed\n");
 	}
 
+	// Don't save route cache temporarily
+
 	return err;
 }
 
@@ -128,22 +154,46 @@ int ip_route_output_slow(struct rtable **rp, struct flowi *oldflp) {
 			.daddr = oldflp->fl4_dst,
 			.saddr = oldflp->fl4_src,
 			.scope = RT_SCOPE_UNIVERSE,
-		}}
+		}},
+		.oif = oldflp->oif
 	};
 	struct fib_result res;
 	unsigned flags = 0;
 	struct net_device *dev_out = NULL;
 	int err;
 
+	// Ignore source address validation
+	// if (oldflp->fl4_src) {
+	// }
+
+	// If we have already know the output device
+	// if (oldflp->oif) {
+	// }
+
+	// If we don't know the destination address
+	// if (!fl.fl4_dst) {
+	// }
+
 	if (fib_lookup(&fl, &res)) {
 		printf("ip_route_output_slow: fib_lookup failed\n");
 		return -1;
 	}
+
+	// destination address is local address
+	// if (res.type == RTN_LOCAL) {
+	// }
+
+	// default route
+	// if (!res.prefixlen && res.type == RTN_UNICAST && !fl.oif) {
+	// 	fib_select_default(&fl, &res);
+	// }
+
 	dev_out = FIB_RES_DEV(res);
 	if (dev_out == NULL) {
 		printf("ip_route_output_slow: FIB_RES_DEV return NULL\n");
 		return -1;
 	}
+	fl.oif = dev_out->ifindex;
 
 	if (!fl.fl4_src) {
 		fl.fl4_src = FIB_RES_PREFSRC(res);
@@ -154,22 +204,21 @@ int ip_route_output_slow(struct rtable **rp, struct flowi *oldflp) {
 	return err;
 }
 
-int __ip_route_output_key(struct rtable **rp, struct flowi *flp) {
+int ip_route_output_key(struct rtable **rp, struct flowi *flp) {
+	// Temporarily do not do routing cache lookup
+
 	return ip_route_output_slow(rp, flp);
 }
 
 int ip_route_output_flow(struct rtable **rp, struct flowi *flp, struct sock *sk, int flags) {
 	int err;
 
-	if ((err = __ip_route_output_key(rp, flp)) != 0) {
-		return err;
+	if ((err = ip_route_output_key(rp, flp)) != 0) {
+		printf("ip_route_output_flow: ip_route_output_key failed\n");
+		return -1;
 	}
 
 	return 0;
-}
-
-int ip_route_output_key(struct rtable **rp, struct flowi *flp) {
-	return ip_route_output_flow(rp, flp, NULL, 0);
 }
 
 int ip_rt_init(void) {

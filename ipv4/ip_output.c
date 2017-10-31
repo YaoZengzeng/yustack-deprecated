@@ -64,12 +64,14 @@ int ip_append_data(struct sock *sk,
 
 	inet->cork.rt = rt;
 
+	// IP header length
 	fragheaderlen = sizeof(struct iphdr) + (opt ? opt->optlen : 0);
 
 	fraggap = 0;
-	datalen = length + fraggap;
-	alloclen = length + fragheaderlen;
-	fraglen = length + fragheaderlen;
+	// datalen is the payload of layer 3
+	datalen = length;
+	alloclen = datalen + fragheaderlen;
+	fraglen = datalen + fragheaderlen;
 
 	skb = alloc_skb(alloclen + hh_len);
 	if (skb == NULL) {
@@ -77,18 +79,24 @@ int ip_append_data(struct sock *sk,
 		return -1;
 	}
 
+	// skb->data point to the header of layer 3
 	skb_reserve(skb, hh_len);
 
 	// Find where to start putting bytes
 	char *data;
+	// skb->tail point to the end
 	data = skb_put(skb, fraglen);
 	skb->nh.raw = data;
+	// skb->data point to the header of layer 4
 	skb_pull(skb, fragheaderlen);
 	data += fragheaderlen;
 	skb->h.raw = data;
+	// skb->data point to the payload of layer 4
 	skb_pull(skb, transhdrlen);
 
+	// copy is payload of layer 4
 	copy = datalen - transhdrlen - fraggap;
+	// copy data from "from" to "data + transhdrlen", length is "copy"
 	if (copy > 0 && getfrag(from, data + transhdrlen, offset, copy, fraggap, skb) < 0) {
 		printf("ip_append_data: getfrag failed\n");
 
@@ -104,7 +112,7 @@ error:
 }
 
 // Combine all pending IP fragments on the socket as one IP datagram
-// and push them out
+// Fill IP head and push them out
 int ip_push_pending_frames(struct sock *sk) {
 	struct sk_buff *skb;
 	struct inet_sock *inet = inet_sk(sk);
@@ -125,6 +133,9 @@ int ip_push_pending_frames(struct sock *sk) {
 	iph = (struct iphdr *)skb->data;
 	iph->version = 4;
 	iph->ihl = 5;
+	// No IP options processing temporarily
+	// if (opt) {
+	// }
 	iph->tos = 0;
 	iph->tot_len = htons(skb->len);
 	iph->frag_off = df;

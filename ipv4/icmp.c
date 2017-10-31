@@ -40,11 +40,14 @@ struct icmp_bxm {
 
 struct socket *icmp_socket;
 
+// Now, "offset" and "odd" is useless
+// Checksum each fragment, and on the first include headers and final checksum
 int icmp_glue_bits(void *from, char *to, int offset, int len, int odd,
 			struct sk_buff *skb) {
 	struct icmphdr *icmph;
 	struct icmp_bxm *icmp_param = (struct icmp_bxm *)from;
 
+	// icmp_param->skb->data point to payload of layer 4
 	memcpy(to, icmp_param->skb->data, len);
 
 	icmph = skb->h.icmph;
@@ -66,7 +69,10 @@ void icmp_push_reply(struct icmp_bxm *icmp_param,
 					icmp_param->head_len, ipc, rt, 0) < 0) {
 		printf("icmp_push_reply: ip_append_data failed\n");
 	 	return;
-	} else if ((skb = skb_peek(&icmp_socket->sk->sk_write_queue)) != NULL){
+	} 
+
+	// send out the packet right now
+	if ((skb = skb_peek(&icmp_socket->sk->sk_write_queue)) != NULL){
 		ip_push_pending_frames(icmp_socket->sk);
 	}
 }
@@ -78,12 +84,15 @@ void icmp_reply(struct icmp_bxm *icmp_param, struct sk_buff *skb) {
 	uint32_t daddr, saddr;
 	int r;
 
+	icmp_param->data.icmph.checksum = 0;
+
 	daddr = rt->rt_src;
 	saddr = rt->rt_dst;
 	struct flowi fl = { .nl_u = { .ip4_u = {
 			.daddr = daddr,
 			.saddr = saddr,
 		} },
+		.proto = IPPROTO_ICMP
 	};
 
 	r = ip_route_output_key(&rt, &fl);
@@ -107,10 +116,12 @@ void icmp_reply(struct icmp_bxm *icmp_param, struct sk_buff *skb) {
 void icmp_echo(struct sk_buff *skb) {
 	struct icmp_bxm icmp_param;
 
+	// construct the icmp header of echo reply
 	icmp_param.data.icmph = *(skb->h.icmph);
 	icmp_param.data.icmph.type = ICMP_ECHOREPLY;
 	icmp_param.skb = skb;
 	icmp_param.offset = 0;
+	// skb->len = layer 4 payload
 	icmp_param.data_len = skb->len;
 	icmp_param.head_len = sizeof(struct icmphdr);
 	icmp_reply(&icmp_param, skb);

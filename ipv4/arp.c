@@ -9,6 +9,7 @@
 #include "if_packet.h"
 #include "neighbour.h"
 #include "netdevice.h"
+#include "rtnetlink.h"
 
 void arp_solicit(struct neighbour *neigh, struct sk_buff *skb) {
 	uint32_t saddr = 0;
@@ -138,14 +139,17 @@ void arp_send(int type, int ptype, uint32_t dest_ip,
 	arp_xmit(skb);
 }
 
+// Process an arp request
 static int arp_process(struct sk_buff *skb) {
 	struct net_device *dev = skb->dev;
 	struct arphdr *arp;
 	unsigned char *arp_ptr;
+	struct rtable *rt;
 	unsigned char *sha, *tha;
 	uint32_t sip, tip;
 	uint16_t dev_type = dev->type;
 	struct neighbour *n;
+	int addr_type;
 
 	arp = skb->nh.arph;
 
@@ -157,7 +161,7 @@ static int arp_process(struct sk_buff *skb) {
 		goto out;
 	}
 
-	// Understand only these message types
+	// Understand only ARPOP_REQUEST and ARPOP_REPLY message types
 	if (arp->ar_op != htons(ARPOP_REPLY) &&
 		arp->ar_op != htons(ARPOP_REQUEST)) {
 		printf("arp_process: arp op code check failed\n");
@@ -181,16 +185,21 @@ static int arp_process(struct sk_buff *skb) {
 		goto out;
 	}
 
-	if (arp->ar_op == htons(ARPOP_REQUEST)) {
-		// before the code or route finished,
-		// directly call arp_send by using dev->dev_addr
-		n = neigh_event_ns(&arp_tbl, sha, &sip, dev);
-		if (n) {
-			arp_send(ARPOP_REPLY, ETH_P_ARP, sip, dev, tip, sha, dev->dev_addr, sha);
+	if (arp->ar_op == htons(ARPOP_REQUEST) && ip_route_input(skb, tip, sip, 0, dev) == 0) {
+		rt = (struct rtable*)skb->dst;
+		addr_type = rt->rt_type;
+
+		if (addr_type == RTN_LOCAL) {
+			n = neigh_event_ns(&arp_tbl, sha, &sip, dev);
+			if (n) {
+				arp_send(ARPOP_REPLY, ETH_P_ARP, sip, dev, tip, sha, dev->dev_addr, sha);
+			} else {
+				printf("arp_process: neigh_event_ns failed\n");
+			}
+			goto out;
 		} else {
-			printf("arp_process: neigh_event_ns failed\n");
+			printf("arp_process: addr_type is not RTN_LOCAL\n");
 		}
-		goto out;
 	}
 
 	// Update our ARP tables
@@ -207,6 +216,7 @@ out:
 	return 0;
 }
 
+// Receive an arp request from the device layer
 int arp_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt) {
 	struct arphdr *arp;
 
@@ -218,6 +228,8 @@ int arp_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt)
 	}
 
 	arp = skb->nh.arph;
+	// arp->ar_hln -> length of hardware address
+	// arp->ar_pln -> length of protocol address
 	if (arp->ar_hln != dev->addr_len ||
 		skb->pkt_type == PACKET_OTHERHOST ||
 		skb->pkt_type == PACKET_LOOPBACK ||

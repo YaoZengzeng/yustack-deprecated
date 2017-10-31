@@ -99,6 +99,9 @@ struct ethhdr *eth_hdr(struct sk_buff *skb) {
 	return (struct ethhdr *)skb->mac.raw;
 }
 
+// is_multicast_ether_addr - Determine if the Ethernet address is a multicast.
+// Return true if the address is a multicast address.
+// By definition the broadcast address is also a multicast address.
 int is_multicast_ether_addr(uint8_t *addr) {
 	return (0x01 & addr[0]);
 }
@@ -107,7 +110,8 @@ int is_broadcast_ether_addr(uint8_t *addr) {
 	return (addr[0] & addr[1] & addr[2] & addr[3] & addr[4] & addr[5]) == 0xff;
 }
 
-// returns 0 if equal
+// compare_ether_addr - Compare two Ethernet addresses
+// Compare two ethernet addresses, returns 0 if equal
 unsigned compare_ether_addr(uint8_t *addr1, uint8_t *addr2) {
 	uint16_t *a = (uint16_t *) addr1;
 	uint16_t *b = (uint16_t *) addr2;
@@ -122,15 +126,20 @@ uint16_t eth_type_trans(struct sk_buff *skb, struct net_device *dev) {
 	skb_pull(skb, ETH_HLEN);
 	eth = eth_hdr(skb);
 
+	// default: skb->pkt_type = PACKET_HOST = 0
 	if (is_multicast_ether_addr(eth->h_dest)) {
 		if (!compare_ether_addr(eth->h_dest, dev->broadcast)) {
 			skb->pkt_type = PACKET_BROADCAST;
+			printf("eth_type_trans: a packet for broadcast\n");
 		} else {
 			skb->pkt_type = PACKET_MULTICAST;
+			printf("eth_type_trans: a packet for multicast\n");
 		}
 	} else if (compare_ether_addr(eth->h_dest, dev->dev_addr)) {
 		skb->pkt_type = PACKET_OTHERHOST;
+		printf("eth_type_trans: a packet for other host\n");
 	}
+	printf("eth_type_trans: a packet for host\n");
 
 	return eth->h_proto;
 }
@@ -146,16 +155,18 @@ void ether_rx(struct net_device *dev) {
 		return;
 	}
 
+	// head = data = tail, end, len = 0
 	skb = dev_alloc_skb(len);
 	if (skb == NULL) {
 		printf("ether_rx : dev_alloc_skb failed\n");
 		return;
 	}
 
+	// head = data, tail = end, len = len
 	memcpy(skb_put(skb, len), buff, len);
 
 	skb->dev = dev;
-	skb->len = len;
+	// data point to the head of IP layer
 	skb->protocol = eth_type_trans(skb, dev);
 
 	if (DEBUG) {
