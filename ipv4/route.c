@@ -83,8 +83,7 @@ int ip_route_input(struct sk_buff *skb, uint32_t daddr, uint32_t saddr,
 }
 
 int __mkroute_output(struct rtable **result, struct fib_result *res,
-				struct flowi *fl, struct flowi *oldflp,
-				struct net_device *dev_out, unsigned flags) {
+				struct flowi *fl, struct net_device *dev_out, unsigned flags) {
 	struct rtable *rth;
 	struct in_device *in_dev = NULL;
 
@@ -110,9 +109,11 @@ int __mkroute_output(struct rtable **result, struct fib_result *res,
 	// rth->fl.fl4_tos = tos;
 	// rth->fl.fl4_src = oldflp->fl4_src;
 	// rth->fl.mark = oldflp->mark;
+	rth->fl = *fl;
 	rth->rt_dst = fl->fl4_dst;
 	rth->rt_src = fl->fl4_src;
-	rth->fl.oif = oldflp->oif;
+	rth->fl.oif = fl->oif;
+	rth->rt_type = res->type;
 	// Get references to the devices that are to be hold by the routing
 	// cache entry
 	rth->u.dst.dev = dev_out;
@@ -125,38 +126,37 @@ int __mkroute_output(struct rtable **result, struct fib_result *res,
 }
 
 int ip_mkroute_output_def(struct rtable **rp, struct fib_result *res,
-				struct flowi *fl, struct flowi *oldflp,
-				struct net_device *dev_out, unsigned flags) {
+				struct flowi *fl, struct net_device *dev_out, unsigned flags) {
 	struct rtable *rth = NULL;
-	int err = __mkroute_output(&rth, res, fl, oldflp, dev_out, flags);
-	if (err == 0) {
-		err = arp_bind_neighbour(&(rth->u.dst));
-		*rp = rth;
-	} else {
+	int err = __mkroute_output(&rth, res, fl, dev_out, flags);
+	if (err != 0) {
 		printf("ip_mkroute_output_def: __mkroute_output failed\n");
 	}
 
+	// Try to bind route to arp only if it is output
+	// route or unicast forwarding path
+	if (rth->rt_type == RTN_UNICAST || rth->fl.iif == 0) {
+		err = arp_bind_neighbour(&(rth->u.dst));
+		if (err != 0) {
+			printf("ip_mkroute_output_def: arp_bind_neighbour failed\n");
+			return -1;
+		}
+	}
+	*rp = rth;
+
 	// Don't save route cache temporarily
 
-	return err;
+	return 0;
 }
 
 int ip_mkroute_output(struct rtable **rp, struct fib_result *res,
-				struct flowi *fl, struct flowi *oldflp,
-				struct net_device *dev_out, unsigned flags) {
+				struct flowi *fl, struct net_device *dev_out, unsigned flags) {
 
-	return ip_mkroute_output_def(rp, res, fl, oldflp, dev_out, flags);
+	return ip_mkroute_output_def(rp, res, fl, dev_out, flags);
 }
 
 // Major route resolver routine
-int ip_route_output_slow(struct rtable **rp, struct flowi *oldflp) {
-	struct flowi fl = { .nl_u = { .ip4_u = {
-			.daddr = oldflp->fl4_dst,
-			.saddr = oldflp->fl4_src,
-			.scope = RT_SCOPE_UNIVERSE,
-		}},
-		.oif = oldflp->oif
-	};
+int ip_route_output_slow(struct rtable **rp, struct flowi *fl) {
 	struct fib_result res;
 	unsigned flags = 0;
 	struct net_device *dev_out = NULL;
@@ -174,7 +174,7 @@ int ip_route_output_slow(struct rtable **rp, struct flowi *oldflp) {
 	// if (!fl.fl4_dst) {
 	// }
 
-	if (fib_lookup(&fl, &res)) {
+	if (fib_lookup(fl, &res)) {
 		printf("ip_route_output_slow: fib_lookup failed\n");
 		return -1;
 	}
@@ -193,13 +193,13 @@ int ip_route_output_slow(struct rtable **rp, struct flowi *oldflp) {
 		printf("ip_route_output_slow: FIB_RES_DEV return NULL\n");
 		return -1;
 	}
-	fl.oif = dev_out->ifindex;
+	fl->oif = dev_out->ifindex;
 
-	if (!fl.fl4_src) {
-		fl.fl4_src = FIB_RES_PREFSRC(res);
+	if (!fl->fl4_src) {
+		fl->fl4_src = FIB_RES_PREFSRC(res);
 	}
 
-	err = ip_mkroute_output(rp, &res, &fl, oldflp, dev_out, flags);
+	err = ip_mkroute_output(rp, &res, fl, dev_out, flags);
 
 	return err;
 }

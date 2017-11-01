@@ -18,11 +18,11 @@ struct inet_sock {
 	uint32_t rcv_saddr;
 
 	uint16_t dport;
-
+	// Port number stored in host byte order
 	uint16_t num;
 
 	uint32_t saddr;
-
+	// Port number stored in network byte order
 	uint16_t sport;
 
 	struct {

@@ -22,8 +22,10 @@ struct neighbour *neigh_alloc(struct neigh_table *tbl) {
 
 	n = (struct neighbour *)malloc(sizeof(struct neighbour) + tbl->key_len);
 	if (n == NULL) {
+		printf("neigh_alloc: malloc struct neighbour failed\n");
 		return NULL;
 	}
+	memset(n, 0, sizeof(struct neighbour) + tbl->key_len);
 
 	skb_queue_head_init(&n->arp_queue);
 	n->tbl = tbl;
@@ -48,6 +50,7 @@ struct neighbour *neigh_create(struct neigh_table *tbl, void *pkey,
 	n->dev = dev;
 
 	// Protocol specific setup
+	// Initialize ops and output fields
 	if (tbl->constructor && tbl->constructor(n) < 0) {
 		printf("neigh_create: table constructor failed\n");
 		goto out;
@@ -66,9 +69,11 @@ out:
 struct neighbour *neigh_lookup(struct neigh_table *tbl, void *pkey,
 					struct net_device *dev) {
 	struct neighbour *n;
+	// Get the length of the neighbour table's key
 	int key_len = tbl->key_len;
 
 	for (n = tbl->buckets; n != NULL; n = n->next) {
+		// same device and same key
 		if (dev == n->dev && !memcmp(n->primary_key, pkey, key_len)) {
 			break;
 		}
@@ -120,9 +125,11 @@ __neigh_lookup(struct neigh_table *tbl, void *pkey, struct net_device *dev, int 
 
 struct neighbour *neigh_event_ns(struct neigh_table *tbl,uint8_t *lladdr,
 	void *saddr, struct net_device *dev) {
+	// if the key doesn't exist and lladdr is not NULL, create one
 	struct neighbour *neigh = __neigh_lookup(tbl, saddr, dev, lladdr);
 
 	if (neigh) {
+		// no state NUD_STALE， be NUD_REACHABLE directly
 		neigh_update(neigh, lladdr, NUD_REACHABLE);
 	}
 

@@ -16,6 +16,7 @@ struct socket_map {
 
 struct socket_map socket_maps[MAXSOCKETNUM];
 
+// sock_alloc - allocate a socket
 struct socket *sock_alloc(void) {
 	struct socket *sock;
 
@@ -29,6 +30,17 @@ int sock_create(int family, int type, int protocol, struct socket **res) {
 	struct socket *sock;
 	struct net_proto_family *pf;
 
+	// Check protocol is in range
+	if (family < 0 || family >= NPROTO) {
+		printf("sock_create: family is out of range\n");
+		return -1;
+	}
+	if (type < 0 || type >= SOCK_MAX) {
+		printf("sock_create: type is out of range\n");
+		return -1;
+	}
+
+	// Allocate the socket and allow the family to set things up
 	sock = sock_alloc();
 	if (sock == NULL) {
 		printf("sock_create: sock_alloc failed\n");
@@ -37,6 +49,7 @@ int sock_create(int family, int type, int protocol, struct socket **res) {
 
 	sock->type = type;
 
+	// For udp, net_families[AF_INET] is inet_family_ops
 	pf = net_families[family];
 	if (pf == NULL) {
 		printf("sock_create: family in net_families is NULL\n");
@@ -63,6 +76,7 @@ int sock_register(struct net_proto_family *ops) {
 		return -1;
 	}
 
+	// For udp, net_families[AF_INET] is inet_family_ops
 	if (net_families[ops->family]) {
 		err = -1;
 	} else {
@@ -85,7 +99,7 @@ int sys_socket(int family, int type, int protocol) {
 		return -1;
 	}
 
-	// work around, use the index of socket_maps as fd
+	// Work around, use the index of socket_maps as fd
 	for(fd = 0; fd < MAXSOCKETNUM; fd++) {
 		if (socket_maps[fd].used) {
 			continue;
@@ -191,6 +205,8 @@ int sys_recv(int fd, void *ubuf, int size, unsigned flags) {
 	return sys_recvfrom(fd, ubuf, size, flags, NULL, NULL);
 }
 
+// Bind a name to a socket. Nothing much to do here since it's
+// the protocol's responsibility to handle the local address.
 int sys_bind(int fd, struct sockaddr *addr, int addrlen) {
 	struct socket *sock;
 	int err;

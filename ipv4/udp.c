@@ -125,6 +125,7 @@ struct udp_sk_map {
 
 #define MAXUDPSOCKNUM 512
 
+// The index of udptable is the port number of corresponding sock
 struct udp_sk_map udptable[MAXUDPSOCKNUM];
 
 int udp_v4_get_port(struct sock *sk, unsigned short snum) {
