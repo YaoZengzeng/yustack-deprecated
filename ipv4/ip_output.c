@@ -125,7 +125,6 @@ int ip_push_pending_frames(struct sock *sk) {
 		return -1;
 	}
 
-	// Move skb->data to ip header from ext header
 	if (skb->nh.raw < skb->data) {
 		skb_push(skb, skb->data - skb->nh.raw);
 	}
@@ -151,7 +150,7 @@ int ip_push_pending_frames(struct sock *sk) {
 	skb->dst = (struct dst_entry *)rt;
 
 	// no route system, just walk around
-	arp_bind_neighbour(skb->dst);
+	// arp_bind_neighbour(skb->dst);
 
 	dst_output(skb);
 

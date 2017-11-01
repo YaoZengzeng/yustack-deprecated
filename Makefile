@@ -24,9 +24,10 @@ OBJFILES = $(OBJ)/main.o \
 		   $(OBJ)/fib_frontend.o \
 		   $(OBJ)/devinet.o \
 		   $(OBJ)/udp.o \
-		   $(OBJ)/datagram.o
+		   $(OBJ)/datagram.o \
+		   $(OBJ)/test.o
 
-SUBDIRS = $(shell ls -l | grep ^d | awk '{if($$9 != "obj" && $$9 != "include") print $$9}')
+SUBDIRS = $(shell ls -l | grep ^d | awk '{if($$9 != "obj" && $$9 != "include" && $$9 != "test-outside") print $$9}')
 
 CFLAGS = -Wall -I$(LIB)
 

@@ -61,9 +61,17 @@ int inet_sendmsg(struct socket *sock, struct msghdr *msg, int size) {
 int inet_bind(struct socket *sock, struct sockaddr *uaddr, int addrlen) {
 	struct sockaddr_in *addr = (struct sockaddr_in *)uaddr;
 	struct sock *sk = sock->sk;
+	struct inet_sock *inet = inet_sk(sk);
 	unsigned short snum;
 
+	// If the socket has its own bind function then use it. (RAW)
+	// if (sk->sk_prot->bind) {
+	//	err = sk->sk_prot->bind(sk, uaddr, addr_len);
+	// }
+
 	snum = ntohs(addr->sin_port);
+
+	inet->rcv_saddr = inet->saddr = addr->sin_addr.s_addr;
 
 	if (sk->sk_prot->get_port(sk, snum) != 0) {
 		printf("inet_bind: sk->sk_prot->get_port failed\n");
@@ -105,6 +113,8 @@ int inet_create(struct socket *sock, int protocol) {
 	struct inet_sock *inet;
 	int i;
 
+	// sock->state = SS_UNCONNECTED;
+
 	answer = NULL;
 
 	for (i = 0; i < INETSW_ARRAY_LEN; i++) {
@@ -115,13 +125,14 @@ int inet_create(struct socket *sock, int protocol) {
 		answer = NULL;
 	}
 
-	// work around
+	// work around, IPPROTO_ICMP is same with IPPROTO_ICMP
 	if (protocol == IPPROTO_ICMP) {
 		answer = inetsw_array;
 	}
 
 	if (answer == NULL) {
 		printf("inet_create: answer is NULL\n");
+		return -1;
 	}
 
 	sock->ops = answer->ops;
@@ -130,14 +141,15 @@ int inet_create(struct socket *sock, int protocol) {
 
 	sk = sk_alloc(PF_INET, answer_prot);
 
-	sk->sk_family = PF_INET;
-	sk->sk_protocol = protocol;
-
 	inet = inet_sk(sk);
 
 	inet->id = 0;
 
+	// Assign sk to sock and initialize sk->sk_write_queue and sk->sk_receive_queue
 	sock_init_data(sock, sk);
+
+	sk->sk_family = PF_INET;
+	sk->sk_protocol = protocol;
 
 	return 0;
 }

@@ -68,7 +68,6 @@ int ip_rcv_finish(struct sk_buff *skb) {
 	return dst_input(skb);
 
 drop:
-	kfree_skb(skb);
 	return NET_RX_DROP;
 }
 
@@ -80,6 +79,11 @@ int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt) 
 	// When the interface is in promisc mode, drop all the crap
 	// that it receives, do not try to analyse it.
 	if (skb->pkt_type == PACKET_OTHERHOST) {
+		printf("ip_rcv: discard packet sent to other host\n");
+		goto drop;
+	}
+	if (skb->pkt_type == PACKET_MULTICAST || skb->pkt_type == PACKET_BROADCAST) {
+		printf("ip_rcv: discard packet which is multicast or broadcast for simplicity\n");
 		goto drop;
 	}
 
@@ -123,7 +127,5 @@ int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt) 
 	return ip_rcv_finish(skb);
 
 drop:
-	kfree_skb(skb);
-out:
 	return NET_RX_DROP;
 }

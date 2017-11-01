@@ -153,6 +153,7 @@ static int arp_process(struct sk_buff *skb) {
 
 	arp = skb->nh.arph;
 
+	// Check format of protocol format and hardware format
 	if (arp->ar_pro != htons(ETH_P_IP)||
 		htons(dev_type) != arp->ar_hrd) {
 		printf("arp->ar_pro is %x, htons(ETH_P_IP) is %x\n", arp->ar_pro, htons(ETH_P_IP));
@@ -261,6 +262,7 @@ int arp_bind_neighbour(struct dst_entry *dst) {
 
 	if (n == NULL) {
 		uint32_t nexthop = ((struct rtable *)dst)->rt_gateway;
+		// __neigh_lookup_errno if don't find the neighbour, then create one
 		n = __neigh_lookup_errno(&arp_tbl, &nexthop, dev);
 		if (n == NULL) {
 			printf("arp_bind_neighbour: __neigh_lookup_errno failed\n");
